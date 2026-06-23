@@ -1,0 +1,23 @@
+stages:
+  - sonar_scan
+
+variables:
+  SONAR_HOST_URL: "http://172.27.16.1:9000/"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+
+sonar_scan:
+  stage: sonar_scan
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  tags:
+    - local-runner
+  script:
+    - echo "🔍 Running SonarQube scan..."
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey=development7734933_go_template_v3.1_251ddc65-4c9a-485c-bd30-fc44c539c971 \
+        -Dsonar.host.url=${SONAR_HOST_URL} \
+        -Dsonar.login=${SONAR_TOKEN} \
+        -Dsonar.qualitygate.wait=true
+  allow_failure: false
