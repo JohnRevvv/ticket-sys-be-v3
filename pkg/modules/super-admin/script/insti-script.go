@@ -3,7 +3,7 @@ package script
 import (
 	"fmt"
 	"ideyanale-be/pkg/config"
-	"ideyanale-be/pkg/modules/super-admin/model"
+	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
 	"time"
 
 	"gorm.io/gorm"
@@ -31,8 +31,8 @@ func AddInstitution(encinstitutionName, encinstitutionCode string) error {
 	).Error
 }
 
-func GetInstitutions() ([]model.Institution, error) {
-	var institutions []model.Institution
+func GetInstitutions() ([]SAdmodel.Institution, error) {
+	var institutions []SAdmodel.Institution
 
 	err := config.DBConnList[0].Raw(`
 		SELECT

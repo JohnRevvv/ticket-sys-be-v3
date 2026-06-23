@@ -7,8 +7,7 @@ import (
 	middleware "ideyanale-be/pkg/middleware/autologout"
 	jwtMiddleware "ideyanale-be/pkg/middleware/jwt"
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
-	positionController "ideyanale-be/pkg/modules/insti-admin/controller"
-	instiInfoController "ideyanale-be/pkg/modules/super-admin/controller"
+	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
 	"ideyanale-be/pkg/modules/users/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"
@@ -59,20 +58,27 @@ func AppRoutes(app *fiber.App) {
 	
 
 	//Super Admin
-	protected.Post("/add-institution", instiInfoController.AddInstitution)
-	protected.Get("/institutions", instiInfoController.GetInstitutions)
+	protected.Post("/add-institution", superadminController.AddInstitution)
+	protected.Get("/institutions", superadminController.GetInstitutions)
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
 
+
 	//Insti Admin
 	protected.Get("/get-user", userController.GetUsersByInstitutionID)
-	protected.Post("/add/job-position", positionController.AddPosition)
-	protected.Get("/job-positions-by-institution", positionController.GetPositionsByInstitutionID)
+	protected.Post("/add/job-position", instiadminController.AddPosition)
+	protected.Get("/job-positions-by-institution", instiadminController.GetPositionsByInstitutionID)
+	protected.Post("/add-ticket-types", instiadminController.AddTicketType)
+	protected.Post("/add-category", instiadminController.AddCategory)
+	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
+
+	protected.Get("/get-ticket-types", instiadminController.GetTicketTypeByInstitutionID)
+	protected.Get("/get-categories", instiadminController.GetCategory)
+	protected.Get("/get-sub-categories", instiadminController.GetSubCategory)
+	
 
 	//User
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUsersByID)
 
-
-	// protected.Get("/dashboard", userController.Dashboard)
 }

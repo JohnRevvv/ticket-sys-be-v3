@@ -9,7 +9,7 @@ import (
 	"ideyanale-be/pkg/middleware/jwt"
 	"strings"
 
-	"ideyanale-be/pkg/modules/super-admin/model"
+	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
 	"ideyanale-be/pkg/modules/super-admin/script"
 
 	"github.com/gofiber/fiber/v3"
@@ -85,7 +85,7 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch users", err, 500)
 	}
 
-	var found *model.SuperAdminDetails
+	var found *SAdmodel.SuperAdminDetails
 
 	for i := range users {
 
@@ -152,7 +152,7 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 
 	// response wrapper
 	type LoginResponse struct {
-		User  *model.SuperAdminDetails `json:"user"`
+		User  *SAdmodel.SuperAdminDetails `json:"user"`
 		Token string                   `json:"token"`
 	}
 

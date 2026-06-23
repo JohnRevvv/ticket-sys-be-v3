@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -91,6 +92,8 @@ func LoginWithOTP(c fiber.Ctx) error {
 	// GENERATE OTP
 	// -------------------------
 	otp := generateOTP()
+
+	log.Printf("[LOGIN OTP] StaffID: %s | OTP: %s", formattedStaffID, otp)
 
 	otpHash, err := bcrypt.GenerateFromPassword([]byte(otp), bcrypt.DefaultCost)
 	if err != nil {

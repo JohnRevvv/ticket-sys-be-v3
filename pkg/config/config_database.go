@@ -12,9 +12,9 @@ import (
 	utils_v1 "github.com/FDSAP-Git-Org/hephaestus/utils/v1"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 
-	SADmodel "ideyanale-be/pkg/modules/super-admin/model"
+	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
+	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
 	Umodel "ideyanale-be/pkg/modules/users/model"
-	Imodel "ideyanale-be/pkg/modules/insti-admin/model"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -30,10 +30,9 @@ var (
 	RedisError         error
 
 	JWTSecret = "your-super-secret-key"
-	
+
 	SecretKey string // ✅ GLOBAL SECRET KEY
 )
-
 
 type DatabaseConfig struct {
 	HostNum  int
@@ -225,13 +224,20 @@ func PostgreSQLConnect() bool {
 
 			// AUTO MIGRATE TABLES
 			err = dbConn.AutoMigrate(
-				&SADmodel.SuperAdminDetails{},
+
+				//superadmin model
+				&SAdmodel.SuperAdminDetails{},
+				&SAdmodel.Institution{},
+
+				// user model
 				&Umodel.UserDetails{},
 				&Umodel.LoginOTP{},
-				&SADmodel.Institution{},
-				&Imodel.JobPosition{},
 
-				// &model.UserDetails{},
+				//insti admin model
+				&IAdmodel.JobPosition{},
+				&IAdmodel.TicketType{},
+				&IAdmodel.Category{},
+				&IAdmodel.SubCategory{},
 			)
 
 			if err != nil {
@@ -251,7 +257,6 @@ func PostgreSQLConnect() bool {
 
 	return true
 }
-
 
 func RedisConnect(address, password string) bool {
 	RedisClient = redis.NewClient(&redis.Options{

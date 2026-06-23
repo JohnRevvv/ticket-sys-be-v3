@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
 )
 
 type Institution struct {
@@ -11,6 +12,7 @@ type Institution struct {
 	Description     string `json:"description"`
 	Status          string `gorm:"default:'active';not null" json:"status"`
 
+	JobPosition []IAdmodel.JobPosition `gorm:"foreignKey:InstitutionID" json:"jobposition"`
 
 	CreatedAt time.Time `json:"created_at"`
 }
