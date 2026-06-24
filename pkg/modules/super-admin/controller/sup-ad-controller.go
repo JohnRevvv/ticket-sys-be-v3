@@ -167,5 +167,3 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 		200,
 	)
 }
-
-

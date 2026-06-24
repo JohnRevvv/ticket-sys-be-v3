@@ -31,9 +31,14 @@ func AddTicketType(c fiber.Ctx) error {
 	}
 
 	trimmedNewTicketTypeName := strings.TrimSpace(req.TicketTypeName)
+
 	if trimmedNewTicketTypeName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Ticket type name is required", nil, 400)
 	}
+
+	// normalize spaces
+	fields := strings.Fields(trimmedNewTicketTypeName)
+	normalizedName := strings.Join(fields, " ")
 
 	inst := c.Locals("institution_id")
 	if inst == nil {
@@ -56,12 +61,12 @@ func AddTicketType(c fiber.Ctx) error {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
 		}
 
-		if strings.EqualFold(strings.TrimSpace(decTicketTypeName), trimmedNewTicketTypeName) {
+		if strings.EqualFold(strings.TrimSpace(decTicketTypeName), normalizedName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Ticket type name already exists", nil, 409)
 		}
 	}
 
-	encTicketTypeName, err := encrypDecryptV1.EncryptV1(trimmedNewTicketTypeName, config.SecretKey)
+	encTicketTypeName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt ticket type name failed", err, 500)
 	}
@@ -95,6 +100,9 @@ func AddCategory(c fiber.Ctx) error {
 	if trimmedCategoryName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Category name is required", nil, 400)
 	}
+
+	fields := strings.Fields(trimmedCategoryName)
+	normalizedName := strings.Join(fields, " ")
 
 	inst := c.Locals("institution_id")
 	if inst == nil {
@@ -132,18 +140,17 @@ func AddCategory(c fiber.Ctx) error {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt category name failed", err, 500)
 		}
 
-		if strings.EqualFold(strings.TrimSpace(decCategoryName), trimmedCategoryName) {
+		if strings.EqualFold(strings.TrimSpace(decCategoryName), normalizedName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Category name already exists", nil, 409)
 		}
 	}
 
-	encCategoryName, err := encrypDecryptV1.EncryptV1(req.CategoryName, config.SecretKey)
+	encCategoryName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt category name failed", err, 500)
 	}
 
-	err = script.AddCategory(encCategoryName, int(req.TicketTypeID))
-	if err != nil {
+	if err = script.AddCategory(encCategoryName, int(req.TicketTypeID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add category failed", err, 500)
 	}
 
@@ -177,6 +184,9 @@ func AddSubCategory(c fiber.Ctx) error {
 	if trimmedSubCategoryName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Sub category name is required", nil, 400)
 	}
+
+	fields := strings.Fields(trimmedSubCategoryName)
+	normalizedName := strings.Join(fields, " ")
 
 	inst := c.Locals("institution_id")
 	if inst == nil {
@@ -221,12 +231,12 @@ func AddSubCategory(c fiber.Ctx) error {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt sub category name failed", err, 500)
 		}
 
-		if strings.EqualFold(strings.TrimSpace(decSubCategoryName), trimmedSubCategoryName) {
+		if strings.EqualFold(strings.TrimSpace(decSubCategoryName), normalizedName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Sub category name already exists", nil, 409)
 		}
 	}
 
-	encSubCategoryName, err := encrypDecryptV1.EncryptV1(req.SubCategoryName, config.SecretKey)
+	encSubCategoryName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt sub category name failed", err, 500)
 	}
@@ -339,10 +349,10 @@ func GetCategoryByID(c fiber.Ctx) error {
 	}
 
 	response := struct {
-		CategoryID     uint   `json:"category_id"`
-		TicketTypeID   uint   `json:"ticket_type_id"`
-		CategoryName string `json:"ticket_type_name"`
-		Status         string `json:"status"`
+		CategoryID   uint   `json:"category_id"`
+		TicketTypeID uint   `json:"ticket_type_id"`
+		CategoryName string `json:"category_name"`
+		Status       string `json:"status"`
 	}{
 		CategoryID:   ticketType.CategoryID,
 		TicketTypeID: ticketType.TicketTypeID,
@@ -352,6 +362,62 @@ func GetCategoryByID(c fiber.Ctx) error {
 
 	// SUCCESS RESPONSE (using your V1 data response)
 	return global.JSONResponseWithDataV1(c, "200", "Ticket type retrieved successfully", response, 200)
+}
+
+func GetSubCategoryByID(c fiber.Ctx) error {
+	inst := c.Locals("institution_id")
+	if inst == nil {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	subcategoryID, err := strconv.Atoi(c.Params("sub_category_id"))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid ticket_type_id", err, 400)
+	}
+
+	subcategory, err := script.GetSubCategoryByID(subcategoryID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
+	}
+
+	if subcategory == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Sub-Category not found", nil, 404)
+	}
+
+	// DECRYPT
+	decSubjectName, err := encrypDecryptV1.DecryptV1(subcategory.SubCategoryName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+	}
+
+	decSubCategoryName, err := encrypDecryptV1.DecryptV1(subcategory.SubjectName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+	}
+
+	decDescription, err := encrypDecryptV1.DecryptV1(subcategory.Description, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+	}
+
+	response := struct {
+		SubCategoryID   uint   `json:"sub_category_id"`
+		CategoryID      uint   `json:"category_id"`
+		SubjectName     string `json:"subject_name"`
+		SubCategoryName string `json:"sub_category_name"`
+		Description     string `json:"description"`
+		Status          string `json:"status"`
+	}{
+		SubCategoryID:   subcategory.SubCategoryID,
+		CategoryID:      subcategory.CategoryID,
+		SubjectName:     decSubjectName,
+		SubCategoryName: decSubCategoryName,
+		Description:     decDescription,
+		Status:          subcategory.Status,
+	}
+
+	// SUCCESS RESPONSE
+	return global.JSONResponseWithDataV1(c, "200", "Sub-Category Details retrieved successfully", response, 200)
 }
 
 func GetAllTicketTypes(c fiber.Ctx) error {
@@ -443,28 +509,14 @@ func GetAllCategories(c fiber.Ctx) error {
 
 func GetAllSubCategories(c fiber.Ctx) error {
 
-	// if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
-	// 	return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
-	// }
-
 	categoryIDParam := c.Params("category_id")
 	if categoryIDParam == "" {
-		return global.JSONResponseWithErrorV1(c, "400", "category_id query param is required", nil, 400)
+		return global.JSONResponseWithErrorV1(c, "400", "category_id is required", nil, 400)
 	}
 
 	categoryID, err := strconv.Atoi(categoryIDParam)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "400", "Invalid category_id", err, 400)
-	}
-
-	inst := c.Locals("institution_id")
-	if inst == nil {
-		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
-	}
-
-	institutionID, ok := inst.(int)
-	if !ok {
-		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
 
 	category, err := script.GetCategoryByID(categoryID)
@@ -482,85 +534,282 @@ func GetAllSubCategories(c fiber.Ctx) error {
 	if ticketType == nil {
 		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
 	}
-	if uint(institutionID) != ticketType.InstitutionID {
-		return global.JSONResponseWithErrorV1(c, "403", "Category does not belong to your institution", nil, 403)
-	}
 
-	allSubCategories, err := script.GetSubCategoriesByCategoryID(categoryID)
+	rows, err := script.GetSubCategoriesByCategoryID(categoryID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch sub categories failed", err, 500)
 	}
 
-	for i := range allSubCategories {
-		decName, err := encrypDecryptV1.DecryptV1(allSubCategories[i].SubCategoryName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt sub category name failed", err, 500)
-		}
-		allSubCategories[i].SubCategoryName = decName
-	}
-
-	return global.JSONResponseWithDataV1(c, "200", "Successfull", allSubCategories, 200)
-}
-
-//==========================
-// EDIT CONTROLLERS
-//==========================
-
-func EditSubCategory(c fiber.Ctx) error {
-
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
-	}
-
-	type Req struct {
+	type SubCategoryResponse struct {
 		SubCategoryID   uint   `json:"sub_category_id"`
+		CategoryID      uint   `json:"category_id"`
 		SubjectName     string `json:"subject_name"`
 		SubCategoryName string `json:"sub_category_name"`
 		Description     string `json:"description"`
 		Status          string `json:"status"`
 	}
 
-	var req Req
+	var response []SubCategoryResponse
 
+	for _, row := range rows {
+
+		subName, err := encrypDecryptV1.DecryptV1(row.SubCategoryName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt sub_category_name failed", err, 500)
+		}
+
+		subjectName, err := encrypDecryptV1.DecryptV1(row.SubjectName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt subject_name failed", err, 500)
+		}
+
+		description, err := encrypDecryptV1.DecryptV1(row.Description, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt description failed", err, 500)
+		}
+
+		response = append(response, SubCategoryResponse{
+			SubCategoryID:   row.SubCategoryID,
+			CategoryID:      row.CategoryID,
+			SubjectName:     subjectName,
+			SubCategoryName: subName,
+			Description:     description,
+			Status:          row.Status,
+		})
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Successful", response, 200)
+}
+
+//==========================
+// EDIT CONTROLLERS
+//==========================
+
+func EditTicketType(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	ticketTypeID, err := strconv.Atoi(c.Params("ticket_type_id"))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid ticket_type_id", err, 400)
+	}
+
+	// SCRIPT CALL (DB ONLY)
+	ticketType, err := script.GetTicketTypeByID(ticketTypeID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
+	}
+
+	if ticketType == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
+	}
+
+	institutionID, ok := c.Locals("institution_id").(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	if ticketType.InstitutionID != uint(institutionID) {
+		return global.JSONResponseWithErrorV1(c, "403", "Ticket type does not belong to your institution", nil, 403)
+	}
+
+	type Req struct {
+		TicketTypeName string `json:"ticket_type_name"`
+		Status         string `json:"status"`
+	}
+
+	var req Req
 	if err := c.Bind().Body(&req); err != nil {
 		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
 	}
 
-	if req.SubCategoryID == 0 {
-		return global.JSONResponseWithErrorV1(c, "400", "Sub category id is required", nil, 400)
+	req.TicketTypeName = strings.TrimSpace(req.TicketTypeName)
+	req.Status = strings.TrimSpace(req.Status)
+
+	if req.TicketTypeName == "" {
+		return global.JSONResponseWithErrorV1(c, "400", "Ticket type name is required", nil, 400)
 	}
 
-	trimmedSubCategoryName := strings.TrimSpace(req.SubCategoryName)
-	trimmedSubjectName := strings.TrimSpace(req.SubjectName)
+	// normalize spaces
+	fields := strings.Fields(req.TicketTypeName)
+	normalizedName := strings.Join(fields, " ")
 
-	if trimmedSubCategoryName == "" {
-		return global.JSONResponseWithErrorV1(c, "400", "Sub category name is required", nil, 400)
-	}
-	if trimmedSubjectName == "" {
-		return global.JSONResponseWithErrorV1(c, "400", "Subject name is required", nil, 400)
+	// Check duplicate ticket type names within the same institution
+	allTicketTypes, err := script.GetTicketTypesByInstitutionID(int(ticketType.InstitutionID))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing ticket types failed", err, 500)
 	}
 
-	inst := c.Locals("institution_id")
-	if inst == nil {
+	for _, tt := range allTicketTypes {
+		if tt.TicketTypeID == ticketType.TicketTypeID {
+			continue
+		}
+
+		name, err := encrypDecryptV1.DecryptV1(tt.TicketTypeName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+		}
+
+		if strings.EqualFold(strings.TrimSpace(name), normalizedName) {
+			return global.JSONResponseWithErrorV1(c, "409", "Ticket type name already exists", nil, 409)
+		}
+	}
+
+	if req.Status == "" {
+		req.Status = ticketType.Status
+	}
+
+	encTicketTypeName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt ticket type name failed", err, 500)
+	}
+
+	err = script.EditTicketType(
+		int(ticketTypeID),
+		encTicketTypeName,
+		req.Status,
+	)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Edit ticket type failed", err, 500)
+	}
+
+	return global.JSONResponseV1(c, "200", "Ticket Type updated successfully", 200)
+}
+
+func EditCategory(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	categoryID, err := strconv.Atoi(c.Params("category_id"))
+	if err != nil || categoryID <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid category_id", nil, 400)
+	}
+
+	// Get category
+	category, err := script.GetCategoryByID(categoryID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get category", err, 500)
+	}
+
+	if category == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Category not found", nil, 404)
+	}
+
+	// Get institution id from JWT
+	institutionID, ok := c.Locals("institution_id").(int)
+	if !ok {
 		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
 	}
 
-	institutionID, ok := inst.(int)
-	if !ok {
-		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
+	// Verify ownership through ticket type
+	ticketType, err := script.GetTicketTypeByID(int(category.TicketTypeID))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
 	}
 
-	existing, err := script.GetSubCategoryByID(int(req.SubCategoryID))
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Fetch sub category failed", err, 500)
+	if ticketType == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
 	}
-	if existing == nil {
+
+	if ticketType.InstitutionID != uint(institutionID) {
+		return global.JSONResponseWithErrorV1(c, "403", "Category does not belong to your institution", nil, 403)
+	}
+
+	type Req struct {
+		CategoryName string `json:"category_name"`
+		Status       string `json:"status"`
+	}
+
+	var req Req
+	if err := c.Bind().Body(&req); err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
+	}
+
+	req.CategoryName = strings.TrimSpace(req.CategoryName)
+	req.Status = strings.TrimSpace(req.Status)
+
+	if req.CategoryName == "" {
+		return global.JSONResponseWithErrorV1(c, "400", "Category name is required", nil, 400)
+	}
+
+	// normalize spaces
+	fields := strings.Fields(req.CategoryName)
+	normalizedName := strings.Join(fields, " ")
+
+	// Check duplicates within the same ticket type
+	allCategories, err := script.GetCategoriesByTicketTypeID(int(category.TicketTypeID))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch categories", err, 500)
+	}
+
+	for _, cat := range allCategories {
+		// Skip current category
+		if cat.CategoryID == category.CategoryID {
+			continue
+		}
+
+		name, err := encrypDecryptV1.DecryptV1(
+			cat.CategoryName,
+			config.SecretKey,
+		)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt category name failed", err, 500)
+		}
+
+		if strings.EqualFold(strings.TrimSpace(name), normalizedName) {
+			return global.JSONResponseWithErrorV1(c, "409", "Category name already exists", nil, 409)
+		}
+	}
+
+	if req.Status == "" {
+		req.Status = category.Status
+	}
+
+	encCategoryName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt category name failed", err, 500)
+	}
+
+	err = script.EditCategory(
+		categoryID,
+		encCategoryName,
+		req.Status,
+	)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Edit category failed", err, 500)
+	}
+
+	return global.JSONResponseV1(c, "200", "Category updated successfully", 200)
+}
+
+func EditSubCategory(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	subCategoryID, err := strconv.Atoi(c.Params("sub_category_id"))
+	if err != nil || subCategoryID <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid sub_category_id", nil, 400)
+	}
+
+	subCategory, err := script.GetSubCategoryByID(subCategoryID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get sub category", err, 500)
+	}
+	if subCategory == nil {
 		return global.JSONResponseWithErrorV1(c, "404", "Sub category not found", nil, 404)
 	}
 
-	category, err := script.GetCategoryByID(int(existing.CategoryID))
+	institutionID, ok := c.Locals("institution_id").(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	category, err := script.GetCategoryByID(int(subCategory.CategoryID))
 	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Fetch category failed", err, 500)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get category", err, 500)
 	}
 	if category == nil {
 		return global.JSONResponseWithErrorV1(c, "404", "Category not found", nil, 404)
@@ -568,56 +817,92 @@ func EditSubCategory(c fiber.Ctx) error {
 
 	ticketType, err := script.GetTicketTypeByID(int(category.TicketTypeID))
 	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Fetch ticket type failed", err, 500)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
 	}
 	if ticketType == nil {
 		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
 	}
-	if uint(institutionID) != ticketType.InstitutionID {
+
+	if ticketType.InstitutionID != uint(institutionID) {
 		return global.JSONResponseWithErrorV1(c, "403", "Sub category does not belong to your institution", nil, 403)
 	}
 
-	// Check duplicates against siblings, excluding itself
-	allSubCategories, err := script.GetSubCategoriesByCategoryID(int(existing.CategoryID))
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing sub categories failed", err, 500)
+	type Req struct {
+		SubCategoryName string `json:"sub_category_name"`
+		SubjectName     string `json:"subject_name"`
+		Description     string `json:"description"`
+		Status          string `json:"status"`
 	}
 
-	for _, sc := range allSubCategories {
-		if sc.SubCategoryID == req.SubCategoryID {
+	var req Req
+	if err := c.Bind().Body(&req); err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
+	}
+
+	req.SubCategoryName = strings.TrimSpace(req.SubCategoryName)
+	req.SubjectName = strings.TrimSpace(req.SubjectName)
+	req.Status = strings.TrimSpace(req.Status)
+
+	if req.SubCategoryName == "" {
+		return global.JSONResponseWithErrorV1(c, "400", "Sub category name is required", nil, 400)
+	}
+
+	if req.SubjectName == "" {
+		return global.JSONResponseWithErrorV1(c, "400", "Subject name is required", nil, 400)
+	}
+
+	// normalize spaces
+	fields := strings.Fields(req.SubCategoryName)
+	normalizedName := strings.Join(fields, " ")
+
+	subCategories, err := script.GetSubCategoriesByCategoryID(int(subCategory.CategoryID))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch sub categories", err, 500)
+	}
+
+	for _, sc := range subCategories {
+		if sc.SubCategoryID == subCategory.SubCategoryID {
 			continue
 		}
 
-		decName, err := encrypDecryptV1.DecryptV1(sc.SubCategoryName, config.SecretKey)
+		name, err := encrypDecryptV1.DecryptV1(sc.SubCategoryName, config.SecretKey)
 		if err != nil {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt sub category name failed", err, 500)
 		}
 
-		if strings.EqualFold(strings.TrimSpace(decName), trimmedSubCategoryName) {
+		if strings.EqualFold(strings.TrimSpace(name), normalizedName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Sub category name already exists", nil, 409)
 		}
 	}
 
-	status := strings.TrimSpace(req.Status)
-	if status == "" {
-		status = existing.Status
+	if req.Status == "" {
+		req.Status = subCategory.Status
 	}
 
-	encSubCategoryName, err := encrypDecryptV1.EncryptV1(req.SubCategoryName, config.SecretKey)
+	encSubCategoryName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt sub category name failed", err, 500)
 	}
+	encSubjectName, err := encrypDecryptV1.EncryptV1(req.SubjectName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt subject name failed", err, 500)
+	}
+	encDescription, err := encrypDecryptV1.EncryptV1(req.Description, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt description failed", err, 500)
+	}
 
 	err = script.EditSubCategory(
-		int(req.SubCategoryID),
+		subCategoryID,
 		encSubCategoryName,
-		trimmedSubjectName,
-		req.Description,
-		status,
+		encSubjectName,
+		encDescription,
+		req.Status,
 	)
+
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Edit sub category failed", err, 500)
 	}
 
-	return global.JSONResponseV1(c, "200", "Sub Category updated successfully", 200)
+	return global.JSONResponseV1(c, "200", "Sub category updated successfully", 200)
 }

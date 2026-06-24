@@ -37,7 +37,7 @@ func AddCategory(categoryname string, tickettypeID int) error {
 func AddSubCategory(subCategoryName, subjectName, description string, categoryID int) error {
 	return config.DBConnList[0].Exec(`
 		INSERT INTO sub_categories (
-			subcategory_name,
+			sub_category_name,
 			subject_name,
 			description,
 			category_id
@@ -135,21 +135,21 @@ func GetCategoryByID(categoryID int) (*IAdmodel.Category, error) {
 }
 
 func GetSubCategoriesByCategoryID(categoryID int) ([]IAdmodel.SubCategory, error) {
-	var allsubcategories []IAdmodel.SubCategory
+	var allSubCategories []IAdmodel.SubCategory
 
 	err := config.DBConnList[0].Raw(`
 		SELECT
 			sub_category_id,
 			category_id,
 			subject_name,
-			subcategory_name,
+			sub_category_name,
 			description,
 			status
 		FROM sub_categories
 		WHERE category_id = ?
-	`, categoryID).Scan(&allsubcategories).Error
+	`, categoryID).Scan(&allSubCategories).Error
 
-	return allsubcategories, err
+	return allSubCategories, err
 }
 
 func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
@@ -160,7 +160,7 @@ func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 			sub_category_id,
 			category_id,
 			subject_name,
-			subcategory_name,
+			sub_category_name,
 			description,
 			status
 		FROM sub_categories
@@ -182,11 +182,39 @@ func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 // EDIT SCRIPTS
 //==========================
 
+func EditTicketType(ticketTypeID int, ticketTypeName, status string) error {
+	return config.DBConnList[0].Exec(`
+		UPDATE ticket_types
+		SET
+			ticket_type_name = ?,
+			status = ?
+		WHERE ticket_type_id = ?
+	`,
+		ticketTypeName,
+		status,
+		ticketTypeID,
+	).Error
+}
+
+func EditCategory(categoryID int, categoryName, status string) error {
+	return config.DBConnList[0].Exec(`
+		UPDATE categories
+		SET
+			category_name = ?,
+			status = ?
+		WHERE category_id = ?
+	`,
+		categoryName,
+		status,
+		categoryID,
+	).Error
+}
+
 func EditSubCategory(subCategoryID int, subCategoryName, subjectName, description, status string) error {
 	return config.DBConnList[0].Exec(`
 		UPDATE sub_categories
 		SET
-			subcategory_name = ?,
+			sub_category_name = ?,
 			subject_name = ?,
 			description = ?,
 			status = ?

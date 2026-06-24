@@ -70,8 +70,14 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-category", instiadminController.AddCategory)
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
 
+	protected.Patch("/edit-ticket-type-info/:ticket_type_id",instiadminController.EditTicketType)
+	protected.Patch("/edit-category-info/:category_id",instiadminController.EditCategory)
+	protected.Patch("/edit-sub-category-info/:sub_category_id",instiadminController.EditSubCategory)
+
 	protected.Get("/get-ticket-type/:ticket_type_id", instiadminController.GetTicketTypeByID)
 	protected.Get("/get-category/:category_id", instiadminController.GetCategoryByID)
+	protected.Get("/get-sub-category/:sub_category_id", instiadminController.GetSubCategoryByID)
+
 	protected.Get("/get-ticket-types", instiadminController.GetAllTicketTypes)
 	protected.Get("/get-categories/:ticket_type_id", instiadminController.GetAllCategories)
 	protected.Get("/get-sub-categories/:category_id", instiadminController.GetAllSubCategories)
