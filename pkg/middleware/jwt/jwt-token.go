@@ -51,7 +51,7 @@ func GenerateUserToken(ID int, staffID string, institutionID int, role string) (
 		"staff_id": staffID,
 		"institution_id": institutionID,
 		"role":         role,
-		"exp":      time.Now().Add(2 * time.Hour).Unix(),
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}
 

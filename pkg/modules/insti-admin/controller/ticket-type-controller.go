@@ -12,9 +12,9 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-//==========================
+// ==========================
 // POST CONTROLLERS
-//==========================
+// ==========================
 func AddTicketType(c fiber.Ctx) error {
 
 	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
@@ -66,7 +66,7 @@ func AddTicketType(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt ticket type name failed", err, 500)
 	}
 
-	if err := script.AddPosition(encTicketTypeName, institutionID); err != nil {
+	if err := script.AddTicketType(encTicketTypeName, institutionID); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add ticket type failed", err, 500)
 	}
 
@@ -76,13 +76,7 @@ func AddTicketType(c fiber.Ctx) error {
 func AddCategory(c fiber.Ctx) error {
 
 	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"403",
-			"Forbidden",
-			err,
-			403,
-		)
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
 	type Req struct {
@@ -97,6 +91,7 @@ func AddCategory(c fiber.Ctx) error {
 	}
 
 	trimmedCategoryName := strings.TrimSpace(req.CategoryName)
+
 	if trimmedCategoryName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Category name is required", nil, 400)
 	}
@@ -175,16 +170,12 @@ func AddSubCategory(c fiber.Ctx) error {
 	}
 
 	trimmedSubCategoryName := strings.TrimSpace(req.SubCategoryName)
-	trimmedSubjectName := strings.TrimSpace(req.SubjectName)
 
 	if req.CategoryID == 0 {
 		return global.JSONResponseWithErrorV1(c, "400", "Category id is required", nil, 400)
 	}
 	if trimmedSubCategoryName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Sub category name is required", nil, 400)
-	}
-	if trimmedSubjectName == "" {
-		return global.JSONResponseWithErrorV1(c, "400", "Subject name is required", nil, 400)
 	}
 
 	inst := c.Locals("institution_id")
@@ -240,7 +231,17 @@ func AddSubCategory(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt sub category name failed", err, 500)
 	}
 
-	err = script.AddSubCategory(encSubCategoryName, trimmedSubjectName, req.Description, int(req.CategoryID))
+	encSubjectName, err := encrypDecryptV1.EncryptV1(req.SubjectName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt subject name failed", err, 500)
+	}
+
+	encDescription, err := encrypDecryptV1.EncryptV1(req.Description, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt subject name failed", err, 500)
+	}
+
+	err = script.AddSubCategory(encSubCategoryName, encSubjectName, encDescription, int(req.CategoryID))
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add sub category failed", err, 500)
 	}
@@ -252,7 +253,108 @@ func AddSubCategory(c fiber.Ctx) error {
 // GET CONTROLLERS
 //==========================
 
-func GetTicketTypeByInstitutionID(c fiber.Ctx) error {
+func GetTicketTypeByID(c fiber.Ctx) error {
+	inst := c.Locals("institution_id")
+	if inst == nil {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	institutionID, ok := inst.(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
+	}
+
+	ticketTypeID, err := strconv.Atoi(c.Params("ticket_type_id"))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid ticket_type_id", err, 400)
+	}
+
+	// SCRIPT CALL (DB ONLY)
+	ticketType, err := script.GetTicketTypeByID(ticketTypeID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
+	}
+
+	if ticketType == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
+	}
+
+	// OWNERSHIP CHECK
+	if int(ticketType.InstitutionID) != institutionID {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", nil, 403)
+	}
+
+	// DECRYPT (CONTROLLER RESPONSIBILITY)
+	decryptedName, err := encrypDecryptV1.DecryptV1(ticketType.TicketTypeName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+	}
+
+	// map decrypted value (DON'T mutate DB struct directly if reused)
+	response := struct {
+		TicketTypeID   uint   `json:"ticket_type_id"`
+		InstitutionID  uint   `json:"institution_id"`
+		TicketTypeName string `json:"ticket_type_name"`
+		Status         string `json:"status"`
+	}{
+		TicketTypeID:   ticketType.TicketTypeID,
+		InstitutionID:  ticketType.InstitutionID,
+		TicketTypeName: decryptedName,
+		Status:         ticketType.Status,
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"Ticket type retrieved successfully",
+		response,
+		200,
+	)
+}
+
+func GetCategoryByID(c fiber.Ctx) error {
+	inst := c.Locals("institution_id")
+	if inst == nil {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	categoryID, err := strconv.Atoi(c.Params("category_id"))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid ticket_type_id", err, 400)
+	}
+
+	ticketType, err := script.GetCategoryByID(categoryID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to get ticket type", err, 500)
+	}
+
+	if ticketType == nil {
+		return global.JSONResponseWithErrorV1(c, "404", "Ticket type not found", nil, 404)
+	}
+
+	// DECRYPT (CONTROLLER RESPONSIBILITY)
+	decName, err := encrypDecryptV1.DecryptV1(ticketType.CategoryName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Decrypt ticket type name failed", err, 500)
+	}
+
+	response := struct {
+		CategoryID     uint   `json:"category_id"`
+		TicketTypeID   uint   `json:"ticket_type_id"`
+		CategoryName string `json:"ticket_type_name"`
+		Status         string `json:"status"`
+	}{
+		CategoryID:   ticketType.CategoryID,
+		TicketTypeID: ticketType.TicketTypeID,
+		CategoryName: decName,
+		Status:       ticketType.Status,
+	}
+
+	// SUCCESS RESPONSE (using your V1 data response)
+	return global.JSONResponseWithDataV1(c, "200", "Ticket type retrieved successfully", response, 200)
+}
+
+func GetAllTicketTypes(c fiber.Ctx) error {
 
 	inst := c.Locals("institution_id")
 	if inst == nil {
@@ -270,8 +372,8 @@ func GetTicketTypeByInstitutionID(c fiber.Ctx) error {
 	}
 
 	type TicketTypeResp struct {
-		PositionID   uint   `json:"position_id"`
-		PositionName string `json:"position_name"`
+		TicketTypeID   uint   `json:"ticket_type_id"`
+		TicketTypeName string `json:"ticket_type_name"`
 	}
 
 	var resp []TicketTypeResp
@@ -282,26 +384,22 @@ func GetTicketTypeByInstitutionID(c fiber.Ctx) error {
 		}
 
 		resp = append(resp, TicketTypeResp{
-			PositionID:   row.TicketTypeID,
-			PositionName: decName,
+			TicketTypeID:   row.TicketTypeID,
+			TicketTypeName: decName,
 		})
 	}
 
 	return global.JSONResponseWithDataV1(c, "200", "Ticket type fetched successfully", resp, 200)
 }
 
-func GetCategory(c fiber.Ctx) error {
+func GetAllCategories(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	ticketypeIDParam := c.Params("ticket_type_id")
+	if ticketypeIDParam == "" {
+		return global.JSONResponseWithErrorV1(c, "400", "ticket_type_id path param is required", nil, 400)
 	}
 
-	ticketypeIDParam := c.Query("ticket_type_id")
-	if ticketypeIDParam  == "" {
-		return global.JSONResponseWithErrorV1(c, "400", "category_id query param is required", nil, 400)
-	}
-
-	tickettypeID, err := strconv.Atoi(ticketypeIDParam )
+	tickettypeID, err := strconv.Atoi(ticketypeIDParam)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "400", "Invalid ticket_type_id", err, 400)
 	}
@@ -316,15 +414,7 @@ func GetCategory(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
 
-	tickettype, err := script.GetTicketTypeByID(tickettypeID)
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Fetch category failed", err, 500)
-	}
-	if tickettype == nil {
-		return global.JSONResponseWithErrorV1(c, "404", "Category not found", nil, 404)
-	}
-
-	ticketType, err := script.GetTicketTypeByID(int(tickettype.TicketTypeID))
+	ticketType, err := script.GetTicketTypeByID(tickettypeID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch ticket type failed", err, 500)
 	}
@@ -348,16 +438,16 @@ func GetCategory(c fiber.Ctx) error {
 		allCategories[i].CategoryName = decName
 	}
 
-	return global.JSONResponseWithDataV1(c, "200","Successfull", allCategories, 200)
+	return global.JSONResponseWithDataV1(c, "200", "Successfull", allCategories, 200)
 }
 
-func GetSubCategory(c fiber.Ctx) error {
+func GetAllSubCategories(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
-	}
+	// if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	// 	return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	// }
 
-	categoryIDParam := c.Query("category_id")
+	categoryIDParam := c.Params("category_id")
 	if categoryIDParam == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "category_id query param is required", nil, 400)
 	}
@@ -409,7 +499,7 @@ func GetSubCategory(c fiber.Ctx) error {
 		allSubCategories[i].SubCategoryName = decName
 	}
 
-	return global.JSONResponseWithDataV1(c, "200","Successfull", allSubCategories, 200)
+	return global.JSONResponseWithDataV1(c, "200", "Successfull", allSubCategories, 200)
 }
 
 //==========================

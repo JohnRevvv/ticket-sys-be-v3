@@ -77,7 +77,8 @@ func GetTicketTypeByID(ticketTypeID int) (*IAdmodel.TicketType, error) {
 		SELECT
 			ticket_type_id,
 			ticket_type_name,
-			institution_id
+			institution_id,
+			status
 		FROM ticket_types
 		WHERE ticket_type_id = ?
 	`, ticketTypeID).Scan(&tickettype).Error
@@ -176,7 +177,6 @@ func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 
 	return &subcategory, nil
 }
-
 
 //==========================
 // EDIT SCRIPTS

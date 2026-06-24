@@ -7,7 +7,7 @@ type (
 		TicketTypeName string `gorm:"column:ticket_type_name;not null" json:"ticket_type_name"`
 		Status         string `gorm:"default:'active';not null" json:"status"`
 
-		Category []Category `gorm:"foreignKey:CategoryID" json:"category"`
+		Category []Category `gorm:"foreignKey:CategoryID"`
 	}
 
 	Category struct {
@@ -16,7 +16,7 @@ type (
 		CategoryName string `gorm:"column:category_name;not null" json:"category_name"`
 		Status       string `gorm:"default:'active';not null" json:"status"`
 
-		SubCategory []SubCategory `gorm:"foreignKey:SubCategoryID" json:"subcategory"`
+		SubCategory []SubCategory `gorm:"foreignKey:CategoryID"`
 	}
 
 	SubCategory struct {

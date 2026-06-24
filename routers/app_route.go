@@ -55,14 +55,12 @@ func AppRoutes(app *fiber.App) {
 
 	// protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected())
 	protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
-	
 
 	//Super Admin
 	protected.Post("/add-institution", superadminController.AddInstitution)
 	protected.Get("/institutions", superadminController.GetInstitutions)
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
-
 
 	//Insti Admin
 	protected.Get("/get-user", userController.GetUsersByInstitutionID)
@@ -72,10 +70,11 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-category", instiadminController.AddCategory)
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
 
-	protected.Get("/get-ticket-types", instiadminController.GetTicketTypeByInstitutionID)
-	protected.Get("/get-categories", instiadminController.GetCategory)
-	protected.Get("/get-sub-categories", instiadminController.GetSubCategory)
-	
+	protected.Get("/get-ticket-type/:ticket_type_id", instiadminController.GetTicketTypeByID)
+	protected.Get("/get-category/:category_id", instiadminController.GetCategoryByID)
+	protected.Get("/get-ticket-types", instiadminController.GetAllTicketTypes)
+	protected.Get("/get-categories/:ticket_type_id", instiadminController.GetAllCategories)
+	protected.Get("/get-sub-categories/:category_id", instiadminController.GetAllSubCategories)
 
 	//User
 	protected.Post("/logout", userController.Logout)
