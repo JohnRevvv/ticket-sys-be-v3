@@ -27,7 +27,7 @@ func getAutoLogoutTimeout() time.Duration {
 	if autoTimeout != 0 {
 		return autoTimeout
 	}
-	minutes := 1
+	minutes := 60
 	if v := os.Getenv("AUTO_LOGOUT_MINUTES"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil {
 			minutes = parsed
@@ -98,6 +98,12 @@ func AutoLogout() fiber.Handler {
 		if last, seen := tracker.lastSeenAt(id); seen && time.Since(last) > timeout {
 			tracker.remove(id)
 			_ = script.LogoutUser(id)
+			return fiber.NewError(fiber.StatusUnauthorized, "session expired due to inactivity")
+		}
+
+		// even if not in tracker (e.g. evicted by the scanner, or server restarted),
+		// refuse if the DB says this user is already logged out
+		if loggedIn, err := script.IsLoggedIn(id); err == nil && !loggedIn {
 			return fiber.NewError(fiber.StatusUnauthorized, "session expired due to inactivity")
 		}
 

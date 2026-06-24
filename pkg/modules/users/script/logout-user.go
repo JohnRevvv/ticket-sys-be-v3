@@ -15,3 +15,16 @@ func LogoutUser(ID int) error {
 		ID,
 	).Error
 }
+
+func IsLoggedIn(id int) (bool, error) {
+	var isLoggedIn bool
+	err := config.DBConnList[0].Raw(`
+		SELECT is_logged_in
+		FROM users
+		WHERE id = ?
+	`,
+		id,
+	).Scan(&isLoggedIn).Error
+
+	return isLoggedIn, err
+}
