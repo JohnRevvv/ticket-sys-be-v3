@@ -238,6 +238,7 @@ func PostgreSQLConnect() bool {
 				&IAdmodel.TicketType{},
 				&IAdmodel.Category{},
 				&IAdmodel.SubCategory{},
+				&IAdmodel.Roles{},
 			)
 
 			if err != nil {

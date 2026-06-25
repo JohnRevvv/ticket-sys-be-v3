@@ -1,24 +1,30 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type (
 	UserDetails struct {
-		ID              int       `gorm:"primaryKey;autoIncrement" json:"id,omitempty"`
-		Username        string    `json:"username,omitempty"`
-		StaffID         string    `json:"staff_id,omitempty"`
-		FirstName       string    `json:"first_name,omitempty"`
-		LastName        string    `json:"last_name,omitempty"`
-		Email           string    `json:"email,omitempty"`
-		PhoneNo         string    `json:"phone_no,omitempty"`
-		InstitutionID   int       `json:"institution_id,omitempty"`
-		InstitutionName string    `json:"institution_name,omitempty"`
-		JobPosition     string    `json:"job_position,omitempty"`
-		Role            string    `json:"role"`
-		Status          string    `json:"status"`
-		LastLogin       string    `json:"last_login,omitempty"`
-		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
-		CreatedAt       time.Time `json:"created_at"`
+		ID              int            `gorm:"primaryKey;autoIncrement" json:"id,omitempty"`
+		Username        string         `json:"username,omitempty"`
+		StaffID         string         `json:"staff_id,omitempty"`
+		FirstName       string         `json:"first_name,omitempty"`
+		LastName        string         `json:"last_name,omitempty"`
+		Email           string         `json:"email,omitempty"`
+		PhoneNo         string         `json:"phone_no,omitempty"`
+		InstitutionID   int            `json:"institution_id,omitempty"`
+		InstitutionName string         `json:"institution_name,omitempty"`
+		JobPosition     string         `json:"job_position,omitempty"`
+		Role            string         `json:"role"`
+		Status          string         `json:"status"`
+		LastLogin       string         `json:"last_login,omitempty"`
+		IsLoggedIn      bool           `json:"is_logged_in,omitempty"`
+		CreatedAt       time.Time      `json:"created_at"`
+		UpdatedAt       time.Time      `json:"updated_at"`
+		DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 	}
 
 	LoginOTP struct {

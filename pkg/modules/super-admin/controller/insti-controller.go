@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
@@ -75,9 +74,6 @@ func AddInstitution(c fiber.Ctx) error {
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add institution failed", err, 500)
 	}
-
-	fmt.Printf("institutionID: %#v\n", institutionID)
-	fmt.Printf("institutionID type: %T\n", institutionID)
 
 	if err := InsAdScript.AddDefaultTicketTypes(uint(institutionID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default ticket types", err, 500)

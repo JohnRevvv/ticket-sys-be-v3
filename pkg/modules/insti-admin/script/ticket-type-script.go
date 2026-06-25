@@ -27,10 +27,14 @@ func AddDefaultTicketTypes(institutionID uint) error {
 			if err != nil {
 				return err
 			}
-			
+
 			if err := tx.Exec(
-				`INSERT INTO ticket_types (ticket_type_name, institution_id)
-				 VALUES (?, ?)`,
+				`INSERT INTO ticket_types (
+					ticket_type_name, 
+					institution_id
+				)
+				 VALUES (?, ?)
+				 `,
 				encName,
 				institutionID,
 			).Error; err != nil {

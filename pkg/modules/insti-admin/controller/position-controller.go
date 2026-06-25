@@ -17,13 +17,7 @@ import (
 func AddPosition(c fiber.Ctx) error {
 
 	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"403",
-			"Forbidden",
-			err,
-			403,
-		)
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403,)
 	}
 
 	type Req struct {
