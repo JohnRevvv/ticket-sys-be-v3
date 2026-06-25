@@ -18,10 +18,10 @@ import (
 func CreateSuperAdmin(c fiber.Ctx) error {
 
 	type Req struct {
-		UserName  string `json:"username"`
-		Role      string `json:"role"`
-		Email     string `json:"email"`
-		Password  string `json:"password"`
+		UserName string `json:"username"`
+		Role     string `json:"role"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	var req Req
@@ -106,24 +106,12 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 	}
 
 	if found == nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"401",
-			"Invalid username/email or password",
-			errors.New("user not found"),
-			401,
-		)
+		return global.JSONResponseWithErrorV1(c, "401", "Invalid username/email or password", errors.New("user not found"), 401)
 	}
 
 	// bcrypt password check
 	if !hashingV1.ValidateHash(req.Password, found.Password) {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"401",
-			"Invalid username/email or password",
-			errors.New("invalid password"),
-			401,
-		)
+		return global.JSONResponseWithErrorV1(c, "401", "Invalid username/email or password", errors.New("invalid password"), 401)
 	}
 
 	// generate JWT token
@@ -133,13 +121,7 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 	)
 
 	if err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"500",
-			"Failed to generate token",
-			err,
-			500,
-		)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to generate token", err, 500)
 	}
 
 	// decrypt email for response
@@ -153,17 +135,12 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 	// response wrapper
 	type LoginResponse struct {
 		User  *SAdmodel.SuperAdminDetails `json:"user"`
-		Token string                   `json:"token"`
+		Token string                      `json:"token"`
 	}
 
-	return global.JSONResponseWithDataV1(
-		c,
-		"200",
-		"Login successful",
+	return global.JSONResponseWithDataV1(c, "200", "Login successful",
 		LoginResponse{
 			User:  found,
 			Token: token,
-		},
-		200,
-	)
+		}, 200)
 }

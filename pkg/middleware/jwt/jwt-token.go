@@ -32,10 +32,10 @@ func RequireRoles(c fiber.Ctx, allowed ...string) error {
 }
 
 func GenerateSuperAdminToken(ID int, username string) (string, error) {
-
 	claims := jwt.MapClaims{
 		"id":       ID,
 		"username": username,
+		"role":     "super-admin",
 		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}

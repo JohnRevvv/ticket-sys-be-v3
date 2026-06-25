@@ -9,8 +9,10 @@ import (
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	jwt "ideyanale-be/pkg/middleware/jwt"
-	script "ideyanale-be/pkg/modules/insti-admin/script"
+	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
 )
+
+
 
 func AddPosition(c fiber.Ctx) error {
 
@@ -45,7 +47,7 @@ func AddPosition(c fiber.Ctx) error {
 	}
 
 	// Fetch existing positions for this institution
-	positions, err := script.GetPositionsByInstitutionID(institutionID)
+	positions, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing positions failed", err, 500)
 	}
@@ -68,7 +70,7 @@ func AddPosition(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt position name failed", err, 500)
 	}
 
-	err = script.AddPosition(encPositionName, institutionID)
+	err = InsAdScript.AddPosition(encPositionName, institutionID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add position failed", err, 500)
 	}
@@ -88,7 +90,7 @@ func GetPositionsByInstitutionID(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
 
-	rows, err := script.GetPositionsByInstitutionID(institutionID)
+	rows, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch positions", err, 500)
 	}
@@ -117,13 +119,7 @@ func GetPositionsByInstitutionID(c fiber.Ctx) error {
 func EditPosition(c fiber.Ctx) error {
 
 	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"403",
-			"Forbidden",
-			err,
-			403,
-		)
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403,)
 	}
 
 	type Req struct {
@@ -148,7 +144,7 @@ func EditPosition(c fiber.Ctx) error {
 	}
 
 	// Fetch existing positions for this institution
-	positions, err := script.GetPositionsByInstitutionID(institutionID)
+	positions, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing positions failed", err, 500)
 	}
@@ -175,7 +171,7 @@ func EditPosition(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt position name failed", err, 500)
 	}
 
-	rowsAffected, err := script.UpdatePosition(req.PositionID, institutionID, encPositionName)
+	rowsAffected, err := InsAdScript.UpdatePosition(req.PositionID, institutionID, encPositionName)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Update position failed", err, 500)
 	}

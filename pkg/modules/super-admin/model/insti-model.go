@@ -8,11 +8,12 @@ import (
 
 type Institution struct {
 	InstitutionID   uint   `gorm:"primaryKey" json:"institution_id"`
-	InstitutionName string `gorm:"unique;not null" json:"institution_name"`
-	Description     string `json:"description"`
+	InstitutionCode	string `gorm:"column:institution_code" json:"institution_code"`
+	InstitutionName string `gorm:"column:institution_name;not null" json:"institution_name"`
+	Description     string `gorm:"column:description" json:"description"`
 	Status          string `gorm:"default:'active';not null" json:"status"`
 
-	JobPosition []IAdmodel.JobPosition `gorm:"foreignKey:InstitutionID" json:"jobposition"`
+	JobPosition []IAdmodel.JobPosition `gorm:"foreignKey:InstitutionID"`
 
 	CreatedAt time.Time `json:"created_at"`
 }

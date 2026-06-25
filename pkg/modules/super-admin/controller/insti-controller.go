@@ -1,10 +1,13 @@
 package controller
 
 import (
+	"fmt"
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
-	"ideyanale-be/pkg/modules/super-admin/script"
+	"ideyanale-be/pkg/middleware/jwt"
+	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
+	SAdScript "ideyanale-be/pkg/modules/super-admin/script"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -12,7 +15,12 @@ import (
 
 func AddInstitution(c fiber.Ctx) error {
 
+	if err := jwt.RequireRoles(c, "super-admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
 	type Req struct {
+		InstitutionCode string `json:"institution_code"`
 		InstitutionName string `json:"institution_name"`
 		Description     string `json:"description"`
 	}
@@ -24,10 +32,22 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
 	}
 
+	institutionCode := strings.TrimSpace(req.InstitutionCode)
 	institutionName := strings.TrimSpace(req.InstitutionName)
 	description := strings.TrimSpace(req.Description)
 
-	encinsitutionName, err := encrypDecryptV1.EncryptV1(institutionName, config.SecretKey)
+	// normalize spaces
+	codefields := strings.Fields(institutionCode)
+	namefields := strings.Fields(institutionName)
+	normalizedCode := strings.Join(codefields, " ")
+	normalizedName := strings.Join(namefields, " ")
+
+	encinsitutionCode, err := encrypDecryptV1.EncryptV1(normalizedCode, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt institution code failed", err, 500)
+	}
+
+	encinsitutionName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt institution name failed", err, 500)
 	}
@@ -37,24 +57,43 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt description failed", err, 500)
 	}
 
+	exists, err := SAdScript.InstitutionExists(encinsitutionCode, encinsitutionName)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Validation failed", err, 500)
+	}
+
+	if exists {
+		return global.JSONResponseWithErrorV1(c, "409", "institution already exists", nil, 409)
+	}
+
 	// save
-	err = script.AddInstitution(
+	institutionID, err := SAdScript.AddInstitution(
+		encinsitutionCode,
 		encinsitutionName,
 		encdescription,
 	)
-
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add institution failed", err, 500)
 	}
 
-	return global.JSONResponseV1(c, "200", "Institution added successfully", 200)
+	fmt.Printf("institutionID: %#v\n", institutionID)
+	fmt.Printf("institutionID type: %T\n", institutionID)
 
+	if err := InsAdScript.AddDefaultTicketTypes(uint(institutionID)); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default ticket types", err, 500)
+	}
+
+	if err := InsAdScript.AddDefaultPositions(uint(institutionID)); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default positions", err, 500)
+	}
+
+	return global.JSONResponseV1(c, "200", "Institution added successfully", 200)
 }
 
 func GetInstitutions(c fiber.Ctx) error {
 
 	// fetch from script layer (DB only)
-	rows, err := script.GetInstitutions()
+	rows, err := SAdScript.GetInstitutions()
 	if err != nil {
 		return global.JSONResponseWithErrorV1(
 			c,
@@ -67,6 +106,7 @@ func GetInstitutions(c fiber.Ctx) error {
 
 	type InstitutionResp struct {
 		InstitutionID   uint   `json:"institution_id"`
+		InstitutionCode string `json:"institution_code"`
 		InstitutionName string `json:"institution_name"`
 		Description     string `json:"description"`
 	}
@@ -74,6 +114,17 @@ func GetInstitutions(c fiber.Ctx) error {
 	data := make([]InstitutionResp, 0, len(rows))
 
 	for _, r := range rows {
+
+		decryptedCode, err := encrypDecryptV1.DecryptV1(r.InstitutionCode, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(
+				c,
+				"500",
+				"Decrypt institution code failed",
+				err,
+				500,
+			)
+		}
 
 		decryptedName, err := encrypDecryptV1.DecryptV1(r.InstitutionName, config.SecretKey)
 		if err != nil {
@@ -99,6 +150,7 @@ func GetInstitutions(c fiber.Ctx) error {
 
 		data = append(data, InstitutionResp{
 			InstitutionID:   r.InstitutionID,
+			InstitutionCode: decryptedCode,
 			InstitutionName: decryptedName,
 			Description:     decryptedDesc,
 		})

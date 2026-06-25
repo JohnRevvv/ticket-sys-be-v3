@@ -2,8 +2,47 @@ package script
 
 import (
 	"ideyanale-be/pkg/config"
+	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	"ideyanale-be/pkg/modules/insti-admin/model"
+
+	"gorm.io/gorm"
 )
+
+// ==========================
+// AUTO-GENERATE SCRIPTS
+// ==========================
+var DefaultPositions = []string{
+	"None",
+}
+
+func AddDefaultPositions(institutionID uint) error {
+	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
+
+		for _, position := range DefaultPositions {
+
+			encPosition, err := encrypDecryptV1.EncryptV1(position, config.SecretKey)
+			if err != nil {
+				return err
+			}
+
+			if err := tx.Exec(`
+			INSERT INTO job_positions (
+				position_name,
+				institution_id
+			)
+			VALUES (?, ?)
+		`,
+				encPosition,
+				institutionID,
+			).Error; err != nil {
+				return err
+			}
+
+		}
+		return nil
+		
+	})
+}
 
 func AddPosition(position string, institutionID int) error {
 	return config.DBConnList[0].Exec(`

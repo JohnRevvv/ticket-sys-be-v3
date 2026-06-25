@@ -60,6 +60,7 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-institution", superadminController.AddInstitution)
 	protected.Get("/institutions", superadminController.GetInstitutions)
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
+	protected.Patch("/user/:id/status", superadminController.ChangeUserStatus)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
 
 	//Insti Admin

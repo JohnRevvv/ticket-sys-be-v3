@@ -2,8 +2,44 @@ package script
 
 import (
 	"ideyanale-be/pkg/config"
+	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
+
+	"gorm.io/gorm"
 )
+
+// ==========================
+// AUTO-GENERATE SCRIPTS
+// ==========================
+var DefaultTicketTypes = []string{
+	"Service Request",
+	// "General Inquiry",
+	// "Technical Support",
+	// "Billing",
+	// "Complaint",
+	// "Feature Request",
+}
+
+func AddDefaultTicketTypes(institutionID uint) error {
+	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
+		for _, name := range DefaultTicketTypes {
+			encName, err := encrypDecryptV1.EncryptV1(name, config.SecretKey)
+			if err != nil {
+				return err
+			}
+			
+			if err := tx.Exec(
+				`INSERT INTO ticket_types (ticket_type_name, institution_id)
+				 VALUES (?, ?)`,
+				encName,
+				institutionID,
+			).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
 
 // ==========================
 // POST SCRIPTS

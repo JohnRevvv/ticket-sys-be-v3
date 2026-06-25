@@ -16,25 +16,6 @@ func getDB() (*gorm.DB, error) {
 	return config.DBConnList[0], nil
 }
 
-func UserExists(staffID, email, phoneNo string) (bool, error) {
-	db, err := getDB()
-	if err != nil {
-		return false, err
-	}
-
-	var count int64
-
-	err = db.Table("users").
-		Where("staff_id = ? OR email = ? OR phone_no = ?", staffID, email, phoneNo).
-		Count(&count).Error
-
-	if err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
-}
-
 func GetActiveUserByStaffID(encStaffID string) (*model.UserDetails, error) {
 	var user model.UserDetails
 
