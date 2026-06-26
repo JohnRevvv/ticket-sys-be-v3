@@ -62,6 +62,7 @@ func AppRoutes(app *fiber.App) {
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
 	protected.Patch("/user/:id/status", superadminController.ChangeUserStatus)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
+	protected.Post("/logout/super-admin", superadminController.LogoutSuperAdmin)
 
 	//Insti Admin
 	protected.Get("/get-user", userController.GetUsersByInstitutionID)
@@ -72,9 +73,9 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
 	protected.Post("/add-new-role", instiadminController.AddRole)
 
-	protected.Patch("/edit-ticket-type-info/:ticket_type_id",instiadminController.EditTicketType)
-	protected.Patch("/edit-category-info/:category_id",instiadminController.EditCategory)
-	protected.Patch("/edit-sub-category-info/:sub_category_id",instiadminController.EditSubCategory)
+	protected.Patch("/edit-ticket-type-info/:ticket_type_id", instiadminController.EditTicketType)
+	protected.Patch("/edit-category-info/:category_id", instiadminController.EditCategory)
+	protected.Patch("/edit-sub-category-info/:sub_category_id", instiadminController.EditSubCategory)
 
 	protected.Get("/get-ticket-type/:ticket_type_id", instiadminController.GetTicketTypeByID)
 	protected.Get("/get-category/:category_id", instiadminController.GetCategoryByID)

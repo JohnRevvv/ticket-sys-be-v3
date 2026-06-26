@@ -21,7 +21,7 @@ type (
 		Role            string         `json:"role"`
 		Status          string         `json:"status"`
 		LastLogin       string         `json:"last_login,omitempty"`
-		IsLoggedIn      bool           `json:"is_logged_in,omitempty"`
+		IsLoggedIn      bool           `gorm:"default:false" json:"is_logged_in,omitempty"`
 		CreatedAt       time.Time      `json:"created_at"`
 		UpdatedAt       time.Time      `json:"updated_at"`
 		DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`

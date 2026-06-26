@@ -8,7 +8,7 @@ import (
 func CreateSuperAdmin(encusername, role, encemail, password string) error {
 
 	return config.DBConnList[0].Exec(`
-		INSERT INTO admin (
+		INSERT INTO superaccount (
 			username,
 			role,
 			email,
@@ -22,27 +22,27 @@ func CreateSuperAdmin(encusername, role, encemail, password string) error {
 	).Error
 }
 
-func GetAllSuperAdmins() ([]model.SuperAdminDetails, error) {
+func GetAllSuperAdmins() ([]model.SuperAccount, error) {
 
-	var users []model.SuperAdminDetails
+	var users []model.SuperAccount
 
 	err := config.DBConnList[0].Raw(`
 		SELECT id, username, 
 		role, email, 
 		password
-		FROM admin
+		FROM superaccount
 	`).Scan(&users).Error
 
 	return users, err
 }
 
-func GetSuperAdminByID(id int) (*model.SuperAdminDetails, error) {
+func GetSuperAdminByID(id int) (*model.SuperAccount, error) {
 
-	var user model.SuperAdminDetails
+	var user model.SuperAccount
 
 	err := config.DBConnList[0].Raw(`
 		SELECT id, username, role, email, password
-		FROM admin
+		FROM superaccount
 		WHERE id = ?
 	`, id).Scan(&user).Error
 
@@ -51,4 +51,32 @@ func GetSuperAdminByID(id int) (*model.SuperAdminDetails, error) {
 	}
 
 	return &user, nil
+}
+
+func LogoutSuperAdmin(id int) error {
+	return config.DBConnList[0].Exec(`
+		UPDATE superaccount
+		SET is_logged_in = false
+		WHERE id = ?
+	`, id).Error
+}
+
+func IsSuperAdminLoggedIn(id int) (bool, error) {
+	var loggedIn bool
+
+	err := config.DBConnList[0].Raw(`
+		SELECT is_logged_in
+		FROM superaccount
+		WHERE id = ?
+	`, id).Scan(&loggedIn).Error
+
+	return loggedIn, err
+}
+
+func SetSuperAdminLoginStatus(id int, loggedIn bool) error {
+	return config.DBConnList[0].Exec(`
+		UPDATE superaccount
+		SET is_logged_in = ?
+		WHERE id = ?
+	`, loggedIn, id).Error
 }

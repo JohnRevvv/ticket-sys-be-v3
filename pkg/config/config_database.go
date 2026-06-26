@@ -226,7 +226,7 @@ func PostgreSQLConnect() bool {
 			err = dbConn.AutoMigrate(
 
 				//superadmin model
-				&SAdmodel.SuperAdminDetails{},
+				&SAdmodel.SuperAccount{},
 				&SAdmodel.Institution{},
 
 				// user model

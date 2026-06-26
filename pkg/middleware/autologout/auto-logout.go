@@ -7,18 +7,24 @@ import (
 	"sync"
 	"time"
 
-	"ideyanale-be/pkg/modules/users/script"
+	SupAdScript "ideyanale-be/pkg/modules/super-admin/script"
+	UserScript "ideyanale-be/pkg/modules/users/script"
 
 	"github.com/gofiber/fiber/v3"
 )
 
+type sessionInfo struct {
+	LastSeen time.Time
+	Role     string
+}
+
 type activityTracker struct {
 	mu       sync.RWMutex
-	lastSeen map[int]time.Time
+	sessions map[int]sessionInfo
 }
 
 var (
-	tracker     = &activityTracker{lastSeen: make(map[int]time.Time)}
+	tracker     = &activityTracker{sessions: make(map[int]sessionInfo)}
 	autoTimeout time.Duration
 	scannerOnce sync.Once
 )
@@ -37,32 +43,47 @@ func getAutoLogoutTimeout() time.Duration {
 	return autoTimeout
 }
 
-func (t *activityTracker) touch(id int) {
+func (t *activityTracker) touch(id int, role string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.lastSeen[id] = time.Now()
-}
 
-func (t *activityTracker) lastSeenAt(id int) (time.Time, bool) {
+	t.sessions[id] = sessionInfo{
+		LastSeen: time.Now(),
+		Role:     role,
+	}
+}
+func (t *activityTracker) get(id int) (sessionInfo, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	ts, ok := t.lastSeen[id]
-	return ts, ok
+
+	s, ok := t.sessions[id]
+	return s, ok
 }
+
+// func (t *activityTracker) lastSeenAt(id int) (time.Time, bool) {
+// 	t.mu.RLock()
+// 	defer t.mu.RUnlock()
+// 	ts, ok := t.lastSeen[id]
+// 	return ts, ok
+// }
 
 func (t *activityTracker) remove(id int) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	delete(t.lastSeen, id)
+
+	delete(t.sessions, id)
 }
 
-func (t *activityTracker) snapshot() map[int]time.Time {
+func (t *activityTracker) snapshot() map[int]sessionInfo {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	out := make(map[int]time.Time, len(t.lastSeen))
-	for k, v := range t.lastSeen {
+
+	out := make(map[int]sessionInfo)
+
+	for k, v := range t.sessions {
 		out[k] = v
 	}
+
 	return out
 }
 
@@ -77,11 +98,20 @@ func AutoLogout() fiber.Handler {
 			defer ticker.Stop()
 			for range ticker.C {
 				now := time.Now()
-				for userID, last := range tracker.snapshot() {
-					if now.Sub(last) > timeout {
-						tracker.remove(userID)
-						if err := script.LogoutUser(userID); err != nil {
-							log.Printf("auto-logout: failed for user %d: %v", userID, err)
+				for id, session := range tracker.snapshot() {
+					if now.Sub(session.LastSeen) > timeout {
+						tracker.remove(id)
+
+						var err error
+
+						if session.Role == "super-admin" {
+							err = SupAdScript.LogoutSuperAdmin(id)
+						} else {
+							err = UserScript.LogoutUser(id)
+						}
+
+						if err != nil {
+							log.Printf("auto-logout: failed for user %d: %v", id, err)
 						}
 					}
 				}
@@ -95,24 +125,51 @@ func AutoLogout() fiber.Handler {
 			return c.Next()
 		}
 
-		if last, seen := tracker.lastSeenAt(id); seen && time.Since(last) > timeout {
+		role, _ := c.Locals("role").(string)
+
+		if session, seen := tracker.get(id); seen &&
+			time.Since(session.LastSeen) > timeout {
+
 			tracker.remove(id)
-			_ = script.LogoutUser(id)
-			return fiber.NewError(fiber.StatusUnauthorized, "session expired due to inactivity")
+
+			if role == "super-admin" {
+				_ = SupAdScript.LogoutSuperAdmin(id)
+			} else {
+				_ = UserScript.LogoutUser(id)
+			}
+
+			return fiber.NewError(
+				fiber.StatusUnauthorized,
+				"session expired due to inactivity",
+			)
 		}
 
 		// even if not in tracker (e.g. evicted by the scanner, or server restarted),
 		// refuse if the DB says this user is already logged out
-		if loggedIn, err := script.IsLoggedIn(id); err == nil && !loggedIn {
-			return fiber.NewError(fiber.StatusUnauthorized, "session expired due to inactivity")
+		if role == "super-admin" {
+			loggedIn, err := SupAdScript.IsSuperAdminLoggedIn(id)
+			if err == nil && !loggedIn {
+				return fiber.NewError(
+					fiber.StatusUnauthorized,
+					"session expired due to inactivity",
+				)
+			}
+		} else {
+			loggedIn, err := UserScript.IsLoggedIn(id)
+			if err == nil && !loggedIn {
+				return fiber.NewError(
+					fiber.StatusUnauthorized,
+					"session expired due to inactivity",
+				)
+			}
 		}
 
-		tracker.touch(id)
+		tracker.touch(id, role)
 		return c.Next()
 	}
 }
 
 // in middleware/auto_logout.go
-func TouchActivity(id int) {
-	tracker.touch(id)
+func TouchActivity(id int, role string) {
+	tracker.touch(id, role)
 }

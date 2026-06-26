@@ -191,7 +191,7 @@ func VerifyOTP(c fiber.Ctx) error {
 	// cleanup OTP
 	_ = script.DeleteOTPByStaffID(encStaffID)
 
-	middleware.TouchActivity(user.ID)
+	middleware.TouchActivity(user.ID, user.Role)
 
 	// response
 	return global.JSONResponseWithDataV1(

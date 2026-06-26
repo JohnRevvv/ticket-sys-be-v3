@@ -85,7 +85,7 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch users", err, 500)
 	}
 
-	var found *SAdmodel.SuperAdminDetails
+	var found *SAdmodel.SuperAccount
 
 	for i := range users {
 
@@ -124,18 +124,34 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to generate token", err, 500)
 	}
 
-	// decrypt email for response
-	email, err := encrypDecryptV1.DecryptV1(found.Email, config.SecretKey)
-	if err == nil {
-		found.Email = email
+	// bcrypt password check
+	if !hashingV1.ValidateHash(req.Password, found.Password) {
+		return global.JSONResponseWithErrorV1(
+			c,
+			"401",
+			"Invalid username/email or password",
+			errors.New("invalid password"),
+			401,
+		)
+	}
+
+	// update login status
+	if err := script.SetSuperAdminLoginStatus(int(found.ID), true); err != nil {
+		return global.JSONResponseWithErrorV1(
+			c,
+			"500",
+			"Failed to update login status",
+			err,
+			500,
+		)
 	}
 
 	found.Password = ""
 
 	// response wrapper
 	type LoginResponse struct {
-		User  *SAdmodel.SuperAdminDetails `json:"user"`
-		Token string                      `json:"token"`
+		User  *SAdmodel.SuperAccount `json:"user"`
+		Token string                 `json:"token"`
 	}
 
 	return global.JSONResponseWithDataV1(c, "200", "Login successful",
@@ -143,4 +159,20 @@ func LoginSuperAdmin(c fiber.Ctx) error {
 			User:  found,
 			Token: token,
 		}, 200)
+}
+
+func LogoutSuperAdmin(c fiber.Ctx) error {
+
+	// get userID from context (set by JWT middleware)
+	ID, ok := c.Locals("id").(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized", nil, 401)
+	}
+
+	// update DB logout status
+	if err := script.LogoutSuperAdmin(ID); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to logout user", err, 500)
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Logout successful", nil, 200)
 }

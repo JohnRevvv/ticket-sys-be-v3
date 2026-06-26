@@ -10,12 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// type BaseClaims struct {
-// 	ID   int    `json:"id"`
-// 	Role string `json:"role"`
-// 	jwt.RegisteredClaims
-// }
-
 func RequireRoles(c fiber.Ctx, allowed ...string) error {
 	role, ok := c.Locals("role").(string)
 	if !ok {

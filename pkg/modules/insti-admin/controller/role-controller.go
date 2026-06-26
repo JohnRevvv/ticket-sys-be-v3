@@ -47,10 +47,7 @@ func AddRole(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "400", "Role name is required", nil, 400)
 	}
 
-	existingRole, err := InsAdScript.ExistingRole(
-		institutionID,
-		normalizedRoleName,
-	)
+	existingRole, err := InsAdScript.ExistingRole(institutionID, normalizedRoleName,)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to check existing role", err, 500)
 	}

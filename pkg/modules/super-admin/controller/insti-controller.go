@@ -83,6 +83,10 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default positions", err, 500)
 	}
 
+	if err := InsAdScript.AddDefaultRoles(uint(institutionID)); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default roles", err, 500)
+	}
+
 	return global.JSONResponseV1(c, "200", "Institution added successfully", 200)
 }
 
@@ -113,35 +117,17 @@ func GetInstitutions(c fiber.Ctx) error {
 
 		decryptedCode, err := encrypDecryptV1.DecryptV1(r.InstitutionCode, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"500",
-				"Decrypt institution code failed",
-				err,
-				500,
-			)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution code failed", err, 500,)
 		}
 
 		decryptedName, err := encrypDecryptV1.DecryptV1(r.InstitutionName, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"500",
-				"Decrypt institution name failed",
-				err,
-				500,
-			)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500,)
 		}
 
 		decryptedDesc, err := encrypDecryptV1.DecryptV1(r.Description, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"500",
-				"Decrypt description failed",
-				err,
-				500,
-			)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt description failed", err, 500,)
 		}
 
 		data = append(data, InstitutionResp{
