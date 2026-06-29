@@ -11,7 +11,7 @@ import (
 
 func AddRole(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 

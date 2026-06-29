@@ -45,6 +45,116 @@ func AddDefaultTicketTypes(institutionID uint) error {
 	})
 }
 
+type DefaultCategory struct {
+	Name string
+}
+
+var DefaultCategories = []DefaultCategory{
+	{
+		Name: "Server",
+	},
+	{
+		Name: "Network",
+	},
+	{
+		Name: "Access",
+	},
+}
+
+func AddDefaultCategories(ticketTypeID uint) error {
+	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
+		for _, category := range DefaultCategories {
+			encName, err := encrypDecryptV1.EncryptV1(
+				category.Name,
+				config.SecretKey,
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := tx.Exec(`
+				INSERT INTO categories (
+					category_name,
+					ticket_type_id
+				)
+				VALUES (?, ?)
+			`,
+				encName,
+				ticketTypeID,
+			).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+type DefaultSubCategory struct {
+	SubCategoryName string
+	SubjectName     string
+	Description     string
+}
+
+var DefaultSubCategories = []DefaultSubCategory{
+	{
+		SubCategoryName: "Server-to-Server Connection",
+		SubjectName:     "I Am Requesting for",
+		Description:     "Request for server to server connection",
+	},
+}
+
+func AddDefaultSubCategories(categoryID uint) error {
+	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
+		for _, sub := range DefaultSubCategories {
+
+			encSubCategory, err := encrypDecryptV1.EncryptV1(
+				sub.SubCategoryName,
+				config.SecretKey,
+			)
+			if err != nil {
+				return err
+			}
+
+			encSubject, err := encrypDecryptV1.EncryptV1(
+				sub.SubjectName,
+				config.SecretKey,
+			)
+			if err != nil {
+				return err
+			}
+
+			encDescription, err := encrypDecryptV1.EncryptV1(
+				sub.Description,
+				config.SecretKey,
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := tx.Exec(`
+				INSERT INTO sub_categories (
+					sub_category_name,
+					subject_name,
+					description,
+					category_id
+				)
+				VALUES (?, ?, ?, ?)
+			`,
+				encSubCategory,
+				encSubject,
+				encDescription,
+				categoryID,
+			).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+
 // ==========================
 // POST SCRIPTS
 // ==========================

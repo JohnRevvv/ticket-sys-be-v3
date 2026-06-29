@@ -104,7 +104,7 @@ func AutoLogout() fiber.Handler {
 
 						var err error
 
-						if session.Role == "super-admin" {
+						if session.Role == "Super-Admin" {
 							err = SupAdScript.LogoutSuperAdmin(id)
 						} else {
 							err = UserScript.LogoutUser(id)
@@ -132,7 +132,7 @@ func AutoLogout() fiber.Handler {
 
 			tracker.remove(id)
 
-			if role == "super-admin" {
+			if role == "Super-Admin" {
 				_ = SupAdScript.LogoutSuperAdmin(id)
 			} else {
 				_ = UserScript.LogoutUser(id)
@@ -146,7 +146,7 @@ func AutoLogout() fiber.Handler {
 
 		// even if not in tracker (e.g. evicted by the scanner, or server restarted),
 		// refuse if the DB says this user is already logged out
-		if role == "super-admin" {
+		if role == "Super-Admin" {
 			loggedIn, err := SupAdScript.IsSuperAdminLoggedIn(id)
 			if err == nil && !loggedIn {
 				return fiber.NewError(

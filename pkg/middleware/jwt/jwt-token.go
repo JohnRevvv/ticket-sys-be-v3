@@ -29,7 +29,7 @@ func GenerateSuperAdminToken(ID int, username string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":       ID,
 		"username": username,
-		"role":     "super-admin",
+		"role":     "Super-Admin",
 		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}

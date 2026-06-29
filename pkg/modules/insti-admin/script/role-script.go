@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type DefaultRole struct {
 	RoleName         string
 	CanCreateTicket  bool
@@ -19,11 +18,19 @@ type DefaultRole struct {
 
 var DefaultRoles = []DefaultRole{
 	{
-		RoleName: "Approver",
+		RoleName:         "Insti-Admin",
+		CanApproveTicket: true,
+		CanEndorseTicket: true,
+		CanAudit:         true,
+		CanResolveTicket: true,
+		CanCreateTicket:  true,
+	},
+	{
+		RoleName:         "Approver",
 		CanApproveTicket: true,
 	},
 	{
-		RoleName: "Endorser",
+		RoleName:         "Endorser",
 		CanEndorseTicket: true,
 	},
 	{
@@ -31,39 +38,14 @@ var DefaultRoles = []DefaultRole{
 		CanAudit: true,
 	},
 	{
-		RoleName: "Resolver",
+		RoleName:         "Resolver",
 		CanResolveTicket: true,
+		CanAudit: true,
 	},
 	{
-		RoleName: "User",
+		RoleName:        "User",
 		CanCreateTicket: true,
 	},
-}
-
-func AddRole(roleName string, institutionID int, canCreate, canEndorse, canApprove,  canResolve, canAudit bool,) error {
-
-	return config.DBConnList[0].Exec(`
-		INSERT INTO roles (
-			institution_id,
-			role_name,
-			can_create,
-			can_endorse,
-			can_approve,
-			can_resolve,
-			can_audit,
-			created_at,
-			updated_at
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-	`,
-		institutionID,
-		roleName,
-		canCreate,
-		canEndorse,
-		canApprove,
-		canResolve,
-		canAudit,
-	).Error
 }
 
 func AddDefaultRoles(institutionID uint) error {
@@ -99,6 +81,32 @@ func AddDefaultRoles(institutionID uint) error {
 
 		return nil
 	})
+}
+
+func AddRole(roleName string, institutionID int, canCreate, canEndorse, canApprove, canResolve, canAudit bool) error {
+
+	return config.DBConnList[0].Exec(`
+		INSERT INTO roles (
+			institution_id,
+			role_name,
+			can_create,
+			can_endorse,
+			can_approve,
+			can_resolve,
+			can_audit,
+			created_at,
+			updated_at
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+	`,
+		institutionID,
+		roleName,
+		canCreate,
+		canEndorse,
+		canApprove,
+		canResolve,
+		canAudit,
+	).Error
 }
 
 func ExistingRole(institutionID int, roleName string) (bool, error) {

@@ -17,7 +17,7 @@ import (
 // ==========================
 func AddTicketType(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -80,7 +80,7 @@ func AddTicketType(c fiber.Ctx) error {
 
 func AddCategory(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -159,7 +159,7 @@ func AddCategory(c fiber.Ctx) error {
 
 func AddSubCategory(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -586,7 +586,7 @@ func GetAllSubCategories(c fiber.Ctx) error {
 //==========================
 
 func EditTicketType(c fiber.Ctx) error {
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -678,7 +678,7 @@ func EditTicketType(c fiber.Ctx) error {
 }
 
 func EditCategory(c fiber.Ctx) error {
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -785,7 +785,7 @@ func EditCategory(c fiber.Ctx) error {
 }
 
 func EditSubCategory(c fiber.Ctx) error {
-	if err := jwt.RequireRoles(c, "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 

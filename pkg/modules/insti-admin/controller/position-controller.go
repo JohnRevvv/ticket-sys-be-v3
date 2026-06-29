@@ -16,8 +16,8 @@ import (
 
 func AddPosition(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403,)
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
 	type Req struct {
@@ -112,8 +112,8 @@ func GetPositionsByInstitutionID(c fiber.Ctx) error {
 
 func EditPosition(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
-		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403,)
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
 	type Req struct {

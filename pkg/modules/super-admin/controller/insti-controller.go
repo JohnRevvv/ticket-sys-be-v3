@@ -14,7 +14,7 @@ import (
 
 func AddInstitution(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Super-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -79,6 +79,14 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default ticket types", err, 500)
 	}
 
+	if err := InsAdScript.AddDefaultCategories(uint(institutionID)); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default categories", err, 500)
+	}
+
+		if err := InsAdScript.AddDefaultSubCategories(uint(institutionID)); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default sub-categories", err, 500)
+	}
+
 	if err := InsAdScript.AddDefaultPositions(uint(institutionID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default positions", err, 500)
 	}
@@ -95,13 +103,7 @@ func GetInstitutions(c fiber.Ctx) error {
 	// fetch from script layer (DB only)
 	rows, err := SAdScript.GetInstitutions()
 	if err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"500",
-			"Failed to fetch institutions",
-			err,
-			500,
-		)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch institutions", err, 500)
 	}
 
 	type InstitutionResp struct {
@@ -117,17 +119,17 @@ func GetInstitutions(c fiber.Ctx) error {
 
 		decryptedCode, err := encrypDecryptV1.DecryptV1(r.InstitutionCode, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution code failed", err, 500,)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution code failed", err, 500)
 		}
 
 		decryptedName, err := encrypDecryptV1.DecryptV1(r.InstitutionName, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500,)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
 		}
 
 		decryptedDesc, err := encrypDecryptV1.DecryptV1(r.Description, config.SecretKey)
 		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt description failed", err, 500,)
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt description failed", err, 500)
 		}
 
 		data = append(data, InstitutionResp{

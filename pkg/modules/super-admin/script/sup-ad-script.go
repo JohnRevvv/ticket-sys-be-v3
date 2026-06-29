@@ -14,7 +14,7 @@ func CreateSuperAdmin(encusername, role, encemail, password string) error {
 			email,
 			password
 		)
-		VALUES (?, 'super-admin', ?, ?)
+		VALUES (?, 'Super-Admin', ?, ?)
 	`,
 		encusername,
 		encemail,

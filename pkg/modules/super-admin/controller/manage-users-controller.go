@@ -15,7 +15,7 @@ import (
 
 func ChangeRoleToAdmin(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Super-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -33,7 +33,7 @@ func ChangeRoleToAdmin(c fiber.Ctx) error {
 
 func ChangeUserRole(c fiber.Ctx) error {
 
-	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 
@@ -43,27 +43,41 @@ func ChangeUserRole(c fiber.Ctx) error {
 	}
 
 	type Req struct {
-		RoleID uint `json:"role_id"`
+		Role string `json:"role"`
 	}
 
 	var req Req
 
 	if err := c.Bind().Body(&req); err != nil {
-		return global.JSONResponseWithErrorV1(c, "400", "Invalid request body", err, 400)
+		return global.JSONResponseWithErrorV1(
+			c,
+			"400",
+			"Invalid request body",
+			err,
+			400,
+		)
 	}
 
-	if req.RoleID == 0 {
-		return global.JSONResponseWithErrorV1(c, "400", "Role ID is required", nil, 400)
+	if strings.TrimSpace(req.Role) == "" {
+		return global.JSONResponseWithErrorV1(
+			c,
+			"400",
+			"Role is required",
+			nil,
+			400,
+		)
 	}
 
 	// Check if role exists
-	role, err := SupAdScript.GetRoleByID(req.RoleID)
+	role, err := SupAdScript.GetRoleByName(req.Role)
 	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch role", err, 500)
-	}
-
-	if role.RoleID == 0 {
-		return global.JSONResponseWithErrorV1(c, "404", "Role not found", nil, 404)
+		return global.JSONResponseWithErrorV1(
+			c,
+			"404",
+			"Role not found",
+			nil,
+			404,
+		)
 	}
 
 	// Get current user's role
@@ -73,9 +87,9 @@ func ChangeUserRole(c fiber.Ctx) error {
 	currentInstitution, _ := c.Locals("institution_id").(int)
 
 	// SUPER ADMIN
-	if currentRole == "super-admin" {
+	if currentRole == "Super-Admin" {
 
-		err = SupAdScript.ChangeUserRole(userID, req.RoleID)
+		err = SupAdScript.ChangeUserRole(userID, req.Role)
 		if err != nil {
 			return global.JSONResponseWithErrorV1(c, "500", "Failed to update role", err, 500)
 		}
@@ -84,7 +98,7 @@ func ChangeUserRole(c fiber.Ctx) error {
 	}
 
 	// INSTI ADMIN
-	if currentRole == "insti-admin" {
+	if currentRole == "Insti-Admin" {
 
 		// role must belong to same institution
 		if int(role.InstitutionID) != currentInstitution {
@@ -115,7 +129,7 @@ func ChangeUserRole(c fiber.Ctx) error {
 			)
 		}
 
-		err = SupAdScript.ChangeUserRole(userID, req.RoleID)
+		err = SupAdScript.ChangeUserRole(userID, role.RoleName)
 		if err != nil {
 			return global.JSONResponseWithErrorV1(
 				c,
@@ -145,7 +159,7 @@ func ChangeUserRole(c fiber.Ctx) error {
 }
 
 func ChangeUserStatus(c fiber.Ctx) error {
-	if err := jwt.RequireRoles(c, "super-admin", "insti-admin"); err != nil {
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
 	}
 

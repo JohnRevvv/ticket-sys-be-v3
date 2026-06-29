@@ -24,7 +24,7 @@ func CreateUser(user *model.UserDetails) error {
 			status,
 			created_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', ?, 'pending', ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'User', ?, 'pending', ?)
 	`,
 		user.Username,
 		user.StaffID,

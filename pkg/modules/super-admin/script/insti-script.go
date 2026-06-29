@@ -17,9 +17,9 @@ func getDB() (*gorm.DB, error) {
 }
 
 func AddInstitution(encinstitutionCode, encinstitutionName, encdescription string) (uint, error) {
-    var institutionID uint
+	var institutionID uint
 
-    err := config.DBConnList[0].Raw(`
+	err := config.DBConnList[0].Raw(`
         INSERT INTO institutions (
             institution_code,
             institution_name,
@@ -29,13 +29,37 @@ func AddInstitution(encinstitutionCode, encinstitutionName, encdescription strin
         VALUES (?, ?, ?, ?)
         RETURNING institution_id
     `,
-        encinstitutionCode,
-        encinstitutionName,
-        encdescription,
-        time.Now(),
-    ).Scan(&institutionID).Error
+		encinstitutionCode,
+		encinstitutionName,
+		encdescription,
+		time.Now(),
+	).Scan(&institutionID).Error
 
-    return institutionID, err
+	return institutionID, err
+}
+
+func GetInstitutionByID(institutionID uint) (*SAdmodel.Institution, error) {
+	var institution SAdmodel.Institution
+
+	err := config.DBConnList[0].Raw(`
+		SELECT
+			institution_id,
+			institution_name
+		FROM institutions
+		WHERE institution_id = ?
+	`,
+		institutionID,
+	).Scan(&institution).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if institution.InstitutionID == 0 {
+		return nil, nil
+	}
+
+	return &institution, nil
 }
 
 func GetInstitutions() ([]SAdmodel.Institution, error) {

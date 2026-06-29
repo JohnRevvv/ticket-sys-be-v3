@@ -9,7 +9,7 @@ import (
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
-	"ideyanale-be/pkg/modules/users/controller"
+	ticketController "ideyanale-be/pkg/modules/tickets/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"
 	crlDataEncryptionV1 "ideyanale-be/pkg/services/data_encryption/controller/v1"
 
@@ -41,8 +41,8 @@ func AppRoutes(app *fiber.App) {
 	// AUTH (PUBLIC)
 	// =========================
 	auth := apiV1.Group("/auth")
-	auth.Post("/login-otp", controller.LoginWithOTP)
-	auth.Post("/verify-otp", controller.VerifyOTP)
+	auth.Post("/login-otp", userController.LoginWithOTP)
+	auth.Post("/verify-otp", userController.VerifyOTP)
 
 	// =========================
 	// USER (PUBLIC OR PARTIAL)
@@ -72,6 +72,7 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-category", instiadminController.AddCategory)
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
 	protected.Post("/add-new-role", instiadminController.AddRole)
+	protected.Patch("/user/change-role/:id", superadminController.ChangeUserRole)
 
 	protected.Patch("/edit-ticket-type-info/:ticket_type_id", instiadminController.EditTicketType)
 	protected.Patch("/edit-category-info/:category_id", instiadminController.EditCategory)
@@ -88,5 +89,8 @@ func AppRoutes(app *fiber.App) {
 	//User
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUsersByID)
+
+	//Ticket
+	protected.Post("/ticket/create", ticketController.CreateNewTicket)
 
 }
