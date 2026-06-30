@@ -1,20 +1,20 @@
 package script
 
 import (
-	"fmt"
+	// "fmt"
 	"ideyanale-be/pkg/config"
 	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
 	"time"
 
-	"gorm.io/gorm"
+	// "gorm.io/gorm"
 )
 
-func getDB() (*gorm.DB, error) {
-	if len(config.DBConnList) == 0 || config.DBConnList[0] == nil {
-		return nil, fmt.Errorf("database not initialized")
-	}
-	return config.DBConnList[0], nil
-}
+// func getDB() (*gorm.DB, error) {
+// 	if len(config.DBConnList) == 0 || config.DBConnList[0] == nil {
+// 		return nil, fmt.Errorf("database not initialized")
+// 	}
+// 	return config.DBConnList[0], nil
+// }
 
 func AddInstitution(encinstitutionCode, encinstitutionName, encdescription string) (uint, error) {
 	var institutionID uint

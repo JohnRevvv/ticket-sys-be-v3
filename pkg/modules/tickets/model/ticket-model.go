@@ -7,7 +7,7 @@ import (
 
 type Ticket struct {
 	ID              uint       `gorm:"primaryKey" json:"id"`
-	TicketID        string     `json:"ticket_id"`
+	TicketID        string     `gorm:"uniqueIndex;not null" json:"ticket_id"`
 	InstitutionID   uint       `json:"institution_id"`
 	TicketTypeID    uint       `json:"ticket_type_id"`
 	CategoryID      uint       `json:"category_id"`
@@ -24,9 +24,9 @@ type Ticket struct {
 	ApproverID uint `json:"approver_id"`
 
 	TicketAttachment []TicketAttachment `gorm:"foreignKey:TicketID;references:TicketID"`
-	Status           string                 `json:"status" gorm:"default:'for endorsement'"`
-	CreatedAt        time.Time              `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt        time.Time              `json:"updated_at" gorm:"autoUpdateTime"`
+	Status           string             `json:"status" gorm:"default:'for endorsement'"`
+	CreatedAt        time.Time          `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt        time.Time          `json:"updated_at" gorm:"autoUpdateTime"`
 
 	CancelledBy        string     `json:"cancelled_by"`
 	CancelledAt        *time.Time `json:"cancelled_at"`
@@ -51,7 +51,6 @@ type Ticket struct {
 func (Ticket) TableName() string {
 	return "tickets"
 }
-
 
 // ── TicketRemark ──────────────────────────────────────────────────────────────
 
