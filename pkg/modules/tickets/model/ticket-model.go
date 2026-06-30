@@ -6,25 +6,27 @@ import (
 )
 
 type Ticket struct {
-	ID              uint                  `gorm:"primaryKey" json:"id"`
-	TicketID        string                `json:"ticket_id"`
-	InstitutionID   uint                  `json:"institution_id"`
-	TicketTypeID    uint                  `json:"ticket_type_id"`
-	CategoryID      uint                  `json:"category_id"`
-	SubCategoryID   uint                  `json:"subcategory_id"`
-	Subject         string                `json:"subject"`
-	Description     string                `json:"description"`
-	DueDate         *time.Time            `json:"due_date"`
-	InstitutionPool uint                  `json:"institution_pool"`
-	SubmitterID     uint                  `json:"submitter_id"`
+	ID              uint       `gorm:"primaryKey" json:"id"`
+	TicketID        string     `json:"ticket_id"`
+	InstitutionID   uint       `json:"institution_id"`
+	TicketTypeID    uint       `json:"ticket_type_id"`
+	CategoryID      uint       `json:"category_id"`
+	SubCategoryID   uint       `json:"subcategory_id"`
+	Subject         string     `json:"subject"`
+	Description     string     `json:"description"`
+	DueDate         *time.Time `json:"due_date"`
+	InstitutionPool uint       `json:"institution_pool"`
+	SubmitterID     uint       `json:"submitter_id"`
 	// Submitter       UserModel.UserDetails `gorm:"foreignKey:SubmitterID;references:ID"`
-	ResolverID      uint                  `json:"resolver_id"`
-	EndorserID      uint                  `json:"endorser_id"`
+	ResolverID uint `json:"resolver_id"`
+	EndorserID uint `json:"endorser_id"`
 	// Endorser        UserModel.UserDetails `gorm:"foreignKey:EndorserID;references:ID"`
-	ApproverID      uint                  `json:"approver_id"`
-	Status          string                `json:"status" gorm:"default:'for endorsement'"`
-	CreatedAt       time.Time             `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt       time.Time             `json:"updated_at" gorm:"autoUpdateTime"`
+	ApproverID uint `json:"approver_id"`
+
+	TicketAttachment []TicketAttachment `gorm:"foreignKey:TicketID;references:TicketID"`
+	Status           string                 `json:"status" gorm:"default:'for endorsement'"`
+	CreatedAt        time.Time              `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt        time.Time              `json:"updated_at" gorm:"autoUpdateTime"`
 
 	CancelledBy        string     `json:"cancelled_by"`
 	CancelledAt        *time.Time `json:"cancelled_at"`
@@ -50,19 +52,6 @@ func (Ticket) TableName() string {
 	return "tickets"
 }
 
-// ── TicketAttachment ──────────────────────────────────────────────────────────
-
-type TicketAttachment struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	TicketID   string `json:"ticket_id"`
-	FileName   string `json:"file_name"`
-	FileKey    string `json:"file_key"`
-	UploadedBy string `json:"uploaded_by"`
-}
-
-func (TicketAttachment) TableName() string {
-	return "ticket_attachments"
-}
 
 // ── TicketRemark ──────────────────────────────────────────────────────────────
 

@@ -33,7 +33,7 @@ func getAutoLogoutTimeout() time.Duration {
 	if autoTimeout != 0 {
 		return autoTimeout
 	}
-	minutes := 60
+	minutes := 30
 	if v := os.Getenv("AUTO_LOGOUT_MINUTES"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil {
 			minutes = parsed

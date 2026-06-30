@@ -7,6 +7,8 @@ import (
 	SAdScript "ideyanale-be/pkg/modules/super-admin/script"
 	ticketModel "ideyanale-be/pkg/modules/tickets/model"
 	ticketScript "ideyanale-be/pkg/modules/tickets/script"
+	"ideyanale-be/pkg/services/s3_service"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,8 +49,26 @@ func CreateNewTicket(c fiber.Ctx) error {
 
 	var req CreateTicketRequest
 
-	if err := c.Bind().Body(&req); err != nil {
-		return global.JSONResponseWithErrorV1(c, "400", "Invalid request body", err, 400)
+	ticketTypeID, _ := strconv.ParseUint(c.FormValue("ticket_type_id"), 10, 64)
+	categoryID, _ := strconv.ParseUint(c.FormValue("category_id"), 10, 64)
+	subCategoryID, _ := strconv.ParseUint(c.FormValue("subcategory_id"), 10, 64)
+	institutionPool, _ := strconv.ParseUint(c.FormValue("institution_pool"), 10, 64)
+	endorserID, _ := strconv.ParseUint(c.FormValue("endorser_id"), 10, 64)
+
+	req.TicketTypeID = uint(ticketTypeID)
+	req.CategoryID = uint(categoryID)
+	req.SubCategoryID = uint(subCategoryID)
+	req.InstitutionPool = uint(institutionPool)
+	req.EndorserID = uint(endorserID)
+	req.Subject = c.FormValue("subject")
+	req.Description = c.FormValue("description")
+
+	if dueDate := c.FormValue("due_date"); dueDate != "" {
+		parsedTime, err := time.Parse(time.RFC3339, dueDate)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "400", "Invalid due date format", err, 400)
+		}
+		req.DueDate = &parsedTime
 	}
 
 	// =====================
@@ -100,10 +120,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 	// Check Ticket Type
 	// =====================
 
-	exist, err := ticketScript.IsTicketTypeBelongsToInstitution(
-		req.InstitutionPool,
-		req.TicketTypeID,
-	)
+	exist, err := ticketScript.IsTicketTypeBelongsToInstitution(req.InstitutionPool, req.TicketTypeID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to validate ticket type", err, 500)
 	}
@@ -116,10 +133,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 	// Check Category
 	// =====================
 
-	exist, err = ticketScript.IsCategoryBelongsToTicketType(
-		req.TicketTypeID,
-		req.CategoryID,
-	)
+	exist, err = ticketScript.IsCategoryBelongsToTicketType(req.TicketTypeID, req.CategoryID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to validate category", err, 500)
 	}
@@ -132,10 +146,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 	// Check SubCategory
 	// =====================
 
-	exist, err = ticketScript.IsSubCategoryBelongsToCategory(
-		req.CategoryID,
-		req.SubCategoryID,
-	)
+	exist, err = ticketScript.IsSubCategoryBelongsToCategory(req.CategoryID, req.SubCategoryID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to validate subcategory", err, 500)
 	}
@@ -148,29 +159,14 @@ func CreateNewTicket(c fiber.Ctx) error {
 	// Check Endorser
 	// =====================
 
-	isValid, err := ticketScript.IsValidEndorser(
-	uint(institutionID),
-	req.EndorserID,
-)
-if err != nil {
-	return global.JSONResponseWithErrorV1(
-		c,
-		"500",
-		"Failed to validate endorser",
-		err,
-		500,
-	)
-}
+	isValid, err := ticketScript.IsValidEndorser(uint(institutionID), req.EndorserID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to validate endorser", err, 500)
+	}
 
-if !isValid {
-	return global.JSONResponseWithErrorV1(
-		c,
-		"404",
-		"Selected user cannot endorse tickets",
-		nil,
-		404,
-	)
-}
+	if !isValid {
+		return global.JSONResponseWithErrorV1(c, "404", "Selected user cannot endorse tickets", nil, 404)
+	}
 
 	// =====================
 	// Encrypt
@@ -204,5 +200,70 @@ if !isValid {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create ticket", err, 500)
 	}
 
-	return global.JSONResponseWithDataV1(c, "200", "Ticket created successfully", ticket, 200)
+	// ====================================
+	// Upload Attachment (optional)
+	// ====================================
+
+	// ====================================
+	// Upload Attachments (max 5)
+	// ====================================
+
+	multipartForm, err := c.MultipartForm()
+	if err == nil {
+
+		files := multipartForm.File["file"] // field name = file
+
+		if len(files) > 5 {
+			return global.JSONResponseWithErrorV1(
+				c,
+				"400",
+				"Maximum of 5 attachments allowed",
+				nil,
+				400,
+			)
+		}
+
+		s3Service, err := services.NewS3Service()
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Failed to initialize S3", err, 500)
+		}
+
+		for _, fileHeader := range files {
+
+			fileName, fileKey, err := s3Service.Upload(fileHeader, ticket.TicketID)
+			if err != nil {
+				return global.JSONResponseWithErrorV1(
+					c,
+					"500",
+					"Failed to upload file",
+					err,
+					500,
+				)
+			}
+
+			attachment := ticketModel.TicketAttachment{
+				TicketID:   ticket.TicketID,
+				FileName:   fileName,
+				FileKey:    fileKey,
+				UploadedBy: uint(submitterID),
+			}
+
+			if err := ticketScript.CreateAttachment(&attachment); err != nil {
+				return global.JSONResponseWithErrorV1(
+					c,
+					"500",
+					"Failed to save attachment",
+					err,
+					500,
+				)
+			}
+		}
+	}
+
+	ticketWithAttachments, err := ticketScript.GetTicketByTicketID(ticket.TicketID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch ticket", err, 500)
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Ticket created successfully", ticketWithAttachments, 200)
 }

@@ -30,7 +30,7 @@ func GenerateSuperAdminToken(ID int, username string) (string, error) {
 		"id":       ID,
 		"username": username,
 		"role":     "Super-Admin",
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(1 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}
 
@@ -45,7 +45,7 @@ func GenerateUserToken(ID int, staffID string, institutionID int, role string) (
 		"staff_id": staffID,
 		"institution_id": institutionID,
 		"role":         role,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(1 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}
 

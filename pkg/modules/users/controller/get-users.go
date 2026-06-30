@@ -27,7 +27,7 @@ func GetUsersByInstitutionID(c fiber.Ctx) error {
 	return global.JSONResponseWithDataV1(c, "200", "Users fetched successfully", users, 200)
 }
 
-func GetUsersByID(c fiber.Ctx) error {
+func GetUserByID(c fiber.Ctx) error {
 
 	userID, err := strconv.Atoi(c.Params("id"))
 	if err != nil || userID <= 0 {
@@ -140,6 +140,7 @@ func GetUsersByID(c fiber.Ctx) error {
 		200,
 	)
 }
+
 // helper (keeps controller clean)
 func now() time.Time {
 	return time.Now()

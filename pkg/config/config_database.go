@@ -243,6 +243,7 @@ func PostgreSQLConnect() bool {
 
 				//Ticket Model
 				&Tmodel.Ticket{},
+				&Tmodel.TicketAttachment{},
 			)
 
 			if err != nil {

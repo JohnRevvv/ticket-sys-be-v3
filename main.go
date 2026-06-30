@@ -10,7 +10,7 @@ import (
 	"ideyanale-be/pkg/config"
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	utilityV1 "ideyanale-be/pkg/middleware/utility/v1"
-	controllers "ideyanale-be/pkg/services/upload/controller"
+	// controllers "ideyanale-be/pkg/services/upload/controller"
 	"ideyanale-be/routers"
 
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -58,9 +58,9 @@ func main() {
 	}))
 
 	
-	uploadController := &controllers.UploadController{}
+	// uploadController := &controllers.UploadController{}
 
-	app.Post("/upload", uploadController.Upload)
+	// app.Post("/upload", uploadController.Upload)
 
 	app.Use(logger.New())
 	app.Use(recover.New())

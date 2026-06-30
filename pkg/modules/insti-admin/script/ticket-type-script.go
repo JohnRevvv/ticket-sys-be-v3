@@ -64,10 +64,7 @@ var DefaultCategories = []DefaultCategory{
 func AddDefaultCategories(ticketTypeID uint) error {
 	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
 		for _, category := range DefaultCategories {
-			encName, err := encrypDecryptV1.EncryptV1(
-				category.Name,
-				config.SecretKey,
-			)
+			encName, err := encrypDecryptV1.EncryptV1(category.Name, config.SecretKey,)
 			if err != nil {
 				return err
 			}
@@ -205,21 +202,6 @@ func AddSubCategory(subCategoryName, subjectName, description string, categoryID
 // GET SCRIPTS
 //==========================
 
-func GetTicketTypesByInstitutionID(institutionID int) ([]IAdmodel.TicketType, error) {
-	var alltickettypes []IAdmodel.TicketType
-
-	err := config.DBConnList[0].Raw(`
-		SELECT
-			ticket_type_id,
-			ticket_type_name,
-			institution_id
-		FROM ticket_types
-		WHERE institution_id = ?
-	`, institutionID).Scan(&alltickettypes).Error
-
-	return alltickettypes, err
-}
-
 func GetTicketTypeByID(ticketTypeID int) (*IAdmodel.TicketType, error) {
 	var tickettype IAdmodel.TicketType
 
@@ -242,22 +224,6 @@ func GetTicketTypeByID(ticketTypeID int) (*IAdmodel.TicketType, error) {
 	}
 
 	return &tickettype, nil
-}
-
-func GetCategoriesByTicketTypeID(ticketTypeID int) ([]IAdmodel.Category, error) {
-	var allcategories []IAdmodel.Category
-
-	err := config.DBConnList[0].Raw(`
-		SELECT
-			category_id,
-			ticket_type_id,
-			category_name,
-			status
-		FROM categories
-		WHERE ticket_type_id = ?
-	`, ticketTypeID).Scan(&allcategories).Error
-
-	return allcategories, err
 }
 
 func GetCategoryByID(categoryID int) (*IAdmodel.Category, error) {
@@ -284,24 +250,6 @@ func GetCategoryByID(categoryID int) (*IAdmodel.Category, error) {
 	return &category, nil
 }
 
-func GetSubCategoriesByCategoryID(categoryID int) ([]IAdmodel.SubCategory, error) {
-	var allSubCategories []IAdmodel.SubCategory
-
-	err := config.DBConnList[0].Raw(`
-		SELECT
-			sub_category_id,
-			category_id,
-			subject_name,
-			sub_category_name,
-			description,
-			status
-		FROM sub_categories
-		WHERE category_id = ?
-	`, categoryID).Scan(&allSubCategories).Error
-
-	return allSubCategories, err
-}
-
 func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 	var subcategory IAdmodel.SubCategory
 
@@ -326,6 +274,55 @@ func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 	}
 
 	return &subcategory, nil
+}
+
+func GetTicketTypesByInstitutionID(institutionID int) ([]IAdmodel.TicketType, error) {
+	var alltickettypes []IAdmodel.TicketType
+
+	err := config.DBConnList[0].Raw(`
+		SELECT
+			ticket_type_id,
+			ticket_type_name,
+			institution_id
+		FROM ticket_types
+		WHERE institution_id = ?
+	`, institutionID).Scan(&alltickettypes).Error
+
+	return alltickettypes, err
+}
+
+func GetCategoriesByTicketTypeID(ticketTypeID int) ([]IAdmodel.Category, error) {
+	var allcategories []IAdmodel.Category
+
+	err := config.DBConnList[0].Raw(`
+		SELECT
+			category_id,
+			ticket_type_id,
+			category_name,
+			status
+		FROM categories
+		WHERE ticket_type_id = ?
+	`, ticketTypeID).Scan(&allcategories).Error
+
+	return allcategories, err
+}
+
+func GetSubCategoriesByCategoryID(categoryID int) ([]IAdmodel.SubCategory, error) {
+	var allSubCategories []IAdmodel.SubCategory
+
+	err := config.DBConnList[0].Raw(`
+		SELECT
+			sub_category_id,
+			category_id,
+			subject_name,
+			sub_category_name,
+			description,
+			status
+		FROM sub_categories
+		WHERE category_id = ?
+	`, categoryID).Scan(&allSubCategories).Error
+
+	return allSubCategories, err
 }
 
 //==========================

@@ -88,7 +88,7 @@ func AppRoutes(app *fiber.App) {
 
 	//User
 	protected.Post("/logout", userController.Logout)
-	protected.Get("/get-user/details/:id", userController.GetUsersByID)
+	protected.Get("/get-user/details/:id", userController.GetUserByID)
 
 	//Ticket
 	protected.Post("/ticket/create", ticketController.CreateNewTicket)
