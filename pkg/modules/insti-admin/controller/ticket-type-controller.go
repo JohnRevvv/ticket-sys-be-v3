@@ -168,6 +168,8 @@ func AddSubCategory(c fiber.Ctx) error {
 		SubjectName     string `json:"subject_name"`
 		SubCategoryName string `json:"sub_category_name"`
 		Description     string `json:"description"`
+		HasDuration     bool   `json:"has_duration"`
+		DurationDays    int    `json:"duration_days"`
 	}
 
 	var req Req
@@ -236,6 +238,17 @@ func AddSubCategory(c fiber.Ctx) error {
 		}
 	}
 
+	if req.HasDuration {
+		switch req.DurationDays {
+		case 30, 60, 90:
+			// valid
+		default:
+			return global.JSONResponseWithErrorV1(c, "400", "Duration must be 30, 60, or 90 days", nil, 400)
+		}
+	} else {
+		req.DurationDays = 0
+	}
+
 	encSubCategoryName, err := encrypDecryptV1.EncryptV1(normalizedName, config.SecretKey)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt sub category name failed", err, 500)
@@ -251,9 +264,15 @@ func AddSubCategory(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt subject name failed", err, 500)
 	}
 
-	err = script.AddSubCategory(encSubCategoryName, encSubjectName, encDescription, int(req.CategoryID))
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Add sub category failed", err, 500)
+	if err := script.AddSubCategory(
+		encSubCategoryName,
+		encSubjectName,
+		encDescription,
+		req.HasDuration,
+		req.DurationDays,
+		int(req.CategoryID),
+	); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to add sub category", err, 500)
 	}
 
 	return global.JSONResponseV1(c, "200", "Sub Category added successfully", 200)
@@ -406,6 +425,8 @@ func GetSubCategoryByID(c fiber.Ctx) error {
 		SubjectName     string `json:"subject_name"`
 		SubCategoryName string `json:"sub_category_name"`
 		Description     string `json:"description"`
+		HasDuration     bool   `json:"has_duration"`
+		DurationDays    int    `json:"duration_days"`
 		Status          string `json:"status"`
 	}{
 		SubCategoryID:   subcategory.SubCategoryID,
@@ -413,6 +434,8 @@ func GetSubCategoryByID(c fiber.Ctx) error {
 		SubjectName:     decSubjectName,
 		SubCategoryName: decSubCategoryName,
 		Description:     decDescription,
+		HasDuration:     subcategory.HasDuration,
+		DurationDays:    subcategory.DurationDays,
 		Status:          subcategory.Status,
 	}
 
@@ -546,6 +569,8 @@ func GetAllSubCategories(c fiber.Ctx) error {
 		SubjectName     string `json:"subject_name"`
 		SubCategoryName string `json:"sub_category_name"`
 		Description     string `json:"description"`
+		HasDuration     bool   `json:"has_duration"`
+		DurationDays    int    `json:"duration_days"`
 		Status          string `json:"status"`
 	}
 
@@ -574,6 +599,8 @@ func GetAllSubCategories(c fiber.Ctx) error {
 			SubjectName:     subjectName,
 			SubCategoryName: subName,
 			Description:     description,
+			HasDuration:     row.HasDuration,
+			DurationDays:    row.DurationDays,
 			Status:          row.Status,
 		})
 	}
@@ -831,6 +858,8 @@ func EditSubCategory(c fiber.Ctx) error {
 		SubCategoryName string `json:"sub_category_name"`
 		SubjectName     string `json:"subject_name"`
 		Description     string `json:"description"`
+		HasDuration     bool   `json:"has_duration"`
+		DurationDays    int    `json:"duration_days"`
 		Status          string `json:"status"`
 	}
 
@@ -841,6 +870,7 @@ func EditSubCategory(c fiber.Ctx) error {
 
 	req.SubCategoryName = strings.TrimSpace(req.SubCategoryName)
 	req.SubjectName = strings.TrimSpace(req.SubjectName)
+	req.Description = strings.TrimSpace(req.Description)
 	req.Status = strings.TrimSpace(req.Status)
 
 	if req.SubCategoryName == "" {
@@ -849,6 +879,23 @@ func EditSubCategory(c fiber.Ctx) error {
 
 	if req.SubjectName == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Subject name is required", nil, 400)
+	}
+
+	if req.HasDuration {
+		switch req.DurationDays {
+		case 30, 60, 90:
+			// valid
+		default:
+			return global.JSONResponseWithErrorV1(
+				c,
+				"400",
+				"Duration must be 30, 60, or 90 days",
+				nil,
+				400,
+			)
+		}
+	} else {
+		req.DurationDays = 0
 	}
 
 	// normalize spaces
@@ -897,6 +944,8 @@ func EditSubCategory(c fiber.Ctx) error {
 		encSubCategoryName,
 		encSubjectName,
 		encDescription,
+		req.HasDuration,
+		req.DurationDays,
 		req.Status,
 	)
 

@@ -31,34 +31,16 @@ func GetUserByID(c fiber.Ctx) error {
 
 	userID, err := strconv.Atoi(c.Params("id"))
 	if err != nil || userID <= 0 {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"400",
-			"Invalid user id",
-			nil,
-			400,
-		)
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid user id", nil, 400,)
 	}
 
 	user, err := script.GetUserByID(userID)
 	if err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"500",
-			"Failed to fetch user",
-			err,
-			500,
-		)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch user", err, 500,)
 	}
 
 	if user.ID == 0 {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"404",
-			"User not found",
-			nil,
-			404,
-		)
+		return global.JSONResponseWithErrorV1(c, "404", "User not found", nil, 404,)
 	}
 
 	type UserDetailsResp struct {
@@ -132,13 +114,7 @@ func GetUserByID(c fiber.Ctx) error {
 		CreatedAt:       user.CreatedAt,
 	}
 
-	return global.JSONResponseWithDataV1(
-		c,
-		"200",
-		"User fetched successfully",
-		resp,
-		200,
-	)
+	return global.JSONResponseWithDataV1(c, "200", "User fetched successfully", resp, 200,)
 }
 
 // helper (keeps controller clean)

@@ -25,6 +25,8 @@ type (
 		SubjectName     string `gorm:"column:subject_name;not null" json:"subject_name"`
 		SubCategoryName string `gorm:"column:sub_category_name;not null" json:"sub_category_name"`
 		Description     string `gorm:"column:description" json:"description"`
+		HasDuration     bool   `gorm:"column:has_duration;" json:"has_duration"`
+		DurationDays    int    `gorm:"column:duration_days" json:"duration_days"`
 		Status          string `gorm:"default:'active';not null" json:"status"`
 	}
 )

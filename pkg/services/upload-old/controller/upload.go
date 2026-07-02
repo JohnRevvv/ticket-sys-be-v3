@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"ideyanale-be/pkg/config"
-	"ideyanale-be/pkg/services/upload/model"
-	"ideyanale-be/pkg/services/upload/script"
+	"ideyanale-be/pkg/services/upload-old/model"
+	"ideyanale-be/pkg/services/upload-old/script"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v3"

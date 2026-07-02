@@ -64,7 +64,7 @@ var DefaultCategories = []DefaultCategory{
 func AddDefaultCategories(ticketTypeID uint) error {
 	return config.DBConnList[0].Transaction(func(tx *gorm.DB) error {
 		for _, category := range DefaultCategories {
-			encName, err := encrypDecryptV1.EncryptV1(category.Name, config.SecretKey,)
+			encName, err := encrypDecryptV1.EncryptV1(category.Name, config.SecretKey)
 			if err != nil {
 				return err
 			}
@@ -91,6 +91,8 @@ type DefaultSubCategory struct {
 	SubCategoryName string
 	SubjectName     string
 	Description     string
+	HasDuration     bool
+	DurationDays    int
 }
 
 var DefaultSubCategories = []DefaultSubCategory{
@@ -98,6 +100,8 @@ var DefaultSubCategories = []DefaultSubCategory{
 		SubCategoryName: "Server-to-Server Connection",
 		SubjectName:     "I Am Requesting for",
 		Description:     "Request for server to server connection",
+		HasDuration:     false,
+		DurationDays:    0,
 	},
 }
 
@@ -151,7 +155,6 @@ func AddDefaultSubCategories(categoryID uint) error {
 	})
 }
 
-
 // ==========================
 // POST SCRIPTS
 // ==========================
@@ -181,19 +184,23 @@ func AddCategory(categoryname string, tickettypeID int) error {
 	).Error
 }
 
-func AddSubCategory(subCategoryName, subjectName, description string, categoryID int) error {
+func AddSubCategory(subCategoryName, subjectName, description string, hasDuration bool, durationDays, categoryID int) error {
 	return config.DBConnList[0].Exec(`
 		INSERT INTO sub_categories (
 			sub_category_name,
 			subject_name,
 			description,
+			has_duration,
+			duration_days,
 			category_id
 		)
-		VALUES (?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		subCategoryName,
 		subjectName,
 		description,
+		hasDuration,
+		durationDays,
 		categoryID,
 	).Error
 }
@@ -260,6 +267,8 @@ func GetSubCategoryByID(subCategoryID int) (*IAdmodel.SubCategory, error) {
 			subject_name,
 			sub_category_name,
 			description,
+			has_duration,
+			duration_days,
 			status
 		FROM sub_categories
 		WHERE sub_category_id = ?
@@ -317,6 +326,8 @@ func GetSubCategoriesByCategoryID(categoryID int) ([]IAdmodel.SubCategory, error
 			subject_name,
 			sub_category_name,
 			description,
+			has_duration,
+			duration_days,
 			status
 		FROM sub_categories
 		WHERE category_id = ?
@@ -357,19 +368,23 @@ func EditCategory(categoryID int, categoryName, status string) error {
 	).Error
 }
 
-func EditSubCategory(subCategoryID int, subCategoryName, subjectName, description, status string) error {
+func EditSubCategory(subCategoryID int, subCategoryName, subjectName, description string, hasDuration bool, durationDays int, status string) error {
 	return config.DBConnList[0].Exec(`
 		UPDATE sub_categories
 		SET
 			sub_category_name = ?,
 			subject_name = ?,
 			description = ?,
+			has_duration = ?,
+			duration_days = ?,
 			status = ?
 		WHERE sub_category_id = ?
 	`,
 		subCategoryName,
 		subjectName,
 		description,
+		hasDuration,
+		durationDays,
 		status,
 		subCategoryID,
 	).Error
