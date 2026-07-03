@@ -6,7 +6,10 @@ import (
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	"ideyanale-be/pkg/middleware/jwt"
 	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
-	SAdScript "ideyanale-be/pkg/modules/super-admin/script"
+	InstiScript "ideyanale-be/pkg/modules/institution/script"
+	services "ideyanale-be/pkg/services/s3_service"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -56,7 +59,7 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt description failed", err, 500)
 	}
 
-	exists, err := SAdScript.InstitutionExists(encinsitutionCode, encinsitutionName)
+	exists, err := InstiScript.InstitutionExists(encinsitutionCode, encinsitutionName)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Validation failed", err, 500)
 	}
@@ -66,7 +69,7 @@ func AddInstitution(c fiber.Ctx) error {
 	}
 
 	// save
-	institutionID, err := SAdScript.AddInstitution(
+	institutionID, err := InstiScript.AddInstitution(
 		encinsitutionCode,
 		encinsitutionName,
 		encdescription,
@@ -83,7 +86,7 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default categories", err, 500)
 	}
 
-		if err := InsAdScript.AddDefaultSubCategories(uint(institutionID)); err != nil {
+	if err := InsAdScript.AddDefaultSubCategories(uint(institutionID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default sub-categories", err, 500)
 	}
 
@@ -101,7 +104,7 @@ func AddInstitution(c fiber.Ctx) error {
 func GetInstitutions(c fiber.Ctx) error {
 
 	// fetch from script layer (DB only)
-	rows, err := SAdScript.GetInstitutions()
+	rows, err := InstiScript.GetInstitutions()
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch institutions", err, 500)
 	}
@@ -141,4 +144,77 @@ func GetInstitutions(c fiber.Ctx) error {
 	}
 
 	return global.JSONResponseWithDataV1(c, "200", "Institutions fetched successfully", data, 200)
+}
+
+func EditInstitution(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	userID, ok := c.Locals("id").(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "401", "Invalid user ID", nil, 401)
+	}
+
+	institutionID, err := strconv.Atoi(c.Params("institution_id"))
+	if err != nil || institutionID <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid institution_id", err, 400)
+	}
+
+	institutionCode := strings.TrimSpace(c.FormValue("institution_code"))
+	institutionName := strings.TrimSpace(c.FormValue("institution_name"))
+	description := strings.TrimSpace(c.FormValue("description"))
+	institutionColor := strings.TrimSpace(c.FormValue("institution_color"))
+
+	// Validate HEX color
+	hexRegex := regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+	if institutionColor != "" && !hexRegex.MatchString(institutionColor) {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid institution color", nil, 400)
+	}
+
+	institutionCode = strings.Join(strings.Fields(institutionCode), " ")
+	institutionName = strings.Join(strings.Fields(institutionName), " ")
+
+	encCode, err := encrypDecryptV1.EncryptV1(institutionCode, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt institution code failed", err, 500)
+	}
+
+	encName, err := encrypDecryptV1.EncryptV1(institutionName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt institution name failed", err, 500)
+	}
+
+	encDescription, err := encrypDecryptV1.EncryptV1(description, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Encrypt description failed", err, 500)
+	}
+
+	if err := InstiScript.UpdateInstitution(uint(institutionID), encCode, encName, encDescription, institutionColor); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Update institution failed", err, 500)
+	}
+
+
+	var s3Service, _ = services.NewS3Service()
+	// Optional logo upload
+	fileHeader, err := c.FormFile("logo")
+	if err == nil {
+
+		oldLogo, _ := InstiScript.GetInstitutionLogo(uint(institutionID))
+
+		fileName, fileKey, err := s3Service.UploadLogo(fileHeader)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", err.Error(), err, 500)
+		}
+
+		if oldLogo != nil && oldLogo.FileKey != "" {
+			_ = s3Service.Delete(oldLogo.FileKey)
+		}
+
+		if err := InstiScript.UpsertInstitutionLogo(uint(institutionID), fileName, fileKey, uint(userID)); err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Failed to save logo", err, 500)
+		}
+	}
+
+	return global.JSONResponseV1(c, "200", "Institution updated successfully", 200)
 }

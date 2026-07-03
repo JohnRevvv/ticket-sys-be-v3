@@ -4,7 +4,7 @@ import (
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
-	SAdScript "ideyanale-be/pkg/modules/super-admin/script"
+	InstiScript "ideyanale-be/pkg/modules/institution/script"
 	ticketModel "ideyanale-be/pkg/modules/tickets/model"
 	ticketScript "ideyanale-be/pkg/modules/tickets/script"
 	"ideyanale-be/pkg/services/s3_service"
@@ -111,7 +111,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 	// Check Institution Pool
 	// =====================
 
-	pool, err := SAdScript.GetInstitutionByID(req.InstitutionPool)
+	pool, err := InstiScript.GetInstitutionByID(req.InstitutionPool)
 	if err != nil || pool == nil {
 		return global.JSONResponseWithErrorV1(c, "404", "Institution pool not found", nil, 404)
 	}
@@ -201,10 +201,6 @@ func CreateNewTicket(c fiber.Ctx) error {
 	}
 
 	// ====================================
-	// Upload Attachment (optional)
-	// ====================================
-
-	// ====================================
 	// Upload Attachments (max 5)
 	// ====================================
 
@@ -232,13 +228,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 
 			fileName, fileKey, err := s3Service.Upload(fileHeader, ticket.TicketID)
 			if err != nil {
-				return global.JSONResponseWithErrorV1(
-					c,
-					"500",
-					"Failed to upload file",
-					err,
-					500,
-				)
+				return global.JSONResponseWithErrorV1(c, "500", "Failed to upload file", err, 500,)
 			}
 
 			attachment := ticketModel.TicketAttachment{

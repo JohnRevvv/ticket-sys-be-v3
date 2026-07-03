@@ -8,6 +8,7 @@ import (
 	jwtMiddleware "ideyanale-be/pkg/middleware/jwt"
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
+	institutionController "ideyanale-be/pkg/modules/institution/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
 	ticketController "ideyanale-be/pkg/modules/tickets/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"
@@ -57,8 +58,6 @@ func AppRoutes(app *fiber.App) {
 	protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
 
 	//Super Admin
-	protected.Post("/add-institution", superadminController.AddInstitution)
-	protected.Get("/institutions", superadminController.GetInstitutions)
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
 	protected.Patch("/user/:id/status", superadminController.ChangeUserStatus)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
@@ -89,6 +88,11 @@ func AppRoutes(app *fiber.App) {
 	//User
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUserByID)
+
+	//Institution
+	protected.Post("/add-institution", institutionController.AddInstitution)
+	protected.Get("/institutions", institutionController.GetInstitutions)
+	protected.Post("/edit-institution/:institution_id", institutionController.EditInstitution)
 
 	//Ticket
 	protected.Post("/ticket/create", ticketController.CreateNewTicket)

@@ -143,6 +143,115 @@ func (s *S3Service) Upload(fileHeader *multipart.FileHeader, ticketID string) (s
 	return fileName, objectKey, nil
 }
 
+func (s *S3Service) UploadLogo(fileHeader *multipart.FileHeader) (string, string, error) {
+
+	// =========================================
+	// Validate file size
+	// =========================================
+
+	const MaxLogoSize = 5 * 1024 * 1024 // 5 MB
+
+	if fileHeader.Size > MaxLogoSize {
+		return "", "", fmt.Errorf(
+			"%s exceeds the maximum allowed size of 5 MB",
+			fileHeader.Filename,
+		)
+	}
+
+	// =========================================
+	// Validate extension
+	// =========================================
+
+	allowedExtensions := map[string]bool{
+		".png":  true,
+		".jpg":  true,
+		".jpeg": true,
+		".webp": true,
+		".svg":  true,
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+
+	if !allowedExtensions[ext] {
+		return "", "", fmt.Errorf(
+			"%s has an unsupported file extension",
+			fileHeader.Filename,
+		)
+	}
+
+	// =========================================
+	// Open file
+	// =========================================
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", "", err
+	}
+	defer file.Close()
+
+	// =========================================
+	// Detect MIME type
+	// =========================================
+
+	buffer := make([]byte, 512)
+
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", "", err
+	}
+
+	contentType := http.DetectContentType(buffer[:n])
+
+	allowedMimeTypes := map[string]bool{
+		"image/png":  true,
+		"image/jpeg": true,
+		"image/webp": true,
+		"image/svg+xml": true,
+	}
+
+	if !allowedMimeTypes[contentType] {
+		return "", "", fmt.Errorf(
+			"%s has an invalid image type (%s)",
+			fileHeader.Filename,
+			contentType,
+		)
+	}
+
+	// Reset file pointer
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", "", err
+	}
+
+	// =========================================
+	// Upload to S3
+	// =========================================
+
+	fileName := sanitizeFileName(fileHeader.Filename)
+
+	objectKey := fmt.Sprintf(
+		"idiyanale/logos/%d_%s",
+		time.Now().UnixNano(),
+		fileName,
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err = s.Client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(objectKey),
+		Body:        file,
+		ContentType: aws.String(contentType),
+	})
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return fileName, objectKey, nil
+}
+
 func NewS3Service() (*S3Service, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
@@ -162,49 +271,6 @@ func NewS3Service() (*S3Service, error) {
 		Bucket: bucket,
 	}, nil
 }
-
-// Upload uploads a file to S3.
-// Returns:
-//   - original filename
-//   - S3 object key
-// func (s *S3Service) Upload(fileHeader *multipart.FileHeader, ticketID string) (string, string, error) {
-
-// 	file, err := fileHeader.Open()
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-// 	defer file.Close()
-
-// 	fileName := sanitizeFileName(fileHeader.Filename)
-
-// 	objectKey := fmt.Sprintf(
-// 		"idiyanale/attachments/%s/%d_%s",
-// 		ticketID,
-// 		time.Now().UnixNano(),
-// 		fileName,
-// 	)
-
-// 	contentType := fileHeader.Header.Get("Content-Type")
-// 	if contentType == "" {
-// 		contentType = "application/octet-stream"
-// 	}
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-// 	defer cancel()
-
-// 	_, err = s.Client.PutObject(ctx, &s3.PutObjectInput{
-// 		Bucket:      aws.String(s.Bucket),
-// 		Key:         aws.String(objectKey),
-// 		Body:        file,
-// 		ContentType: aws.String(contentType),
-// 	})
-
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-
-// 	return fileName, objectKey, nil
-// }
 
 func (s *S3Service) GeneratePresignedDownloadURL(key string, expiration time.Duration) (string, error) {
 

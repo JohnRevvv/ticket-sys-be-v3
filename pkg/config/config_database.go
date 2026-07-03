@@ -16,6 +16,7 @@ import (
 	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
 	Umodel "ideyanale-be/pkg/modules/users/model"
 	Tmodel "ideyanale-be/pkg/modules/tickets/model"
+	Instimodel "ideyanale-be/pkg/modules/institution/model"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -228,7 +229,6 @@ func PostgreSQLConnect() bool {
 
 				//superadmin model
 				&SAdmodel.SuperAccount{},
-				&SAdmodel.Institution{},
 
 				// user model
 				&Umodel.UserDetails{},
@@ -244,6 +244,10 @@ func PostgreSQLConnect() bool {
 				//Ticket Model
 				&Tmodel.Ticket{},
 				&Tmodel.TicketAttachment{},
+
+				//Institution Model
+				&Instimodel.Institution{},
+				&Instimodel.InstitutionLogo{},
 			)
 
 			if err != nil {
