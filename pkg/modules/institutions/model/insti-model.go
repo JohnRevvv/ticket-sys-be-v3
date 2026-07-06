@@ -21,6 +21,7 @@ type (
 
 		CreatedAt time.Time `json:"created_at"`
 	}
+	
 	InstitutionLogo struct {
 		ID            uint   `gorm:"primaryKey" json:"id"`
 		InstitutionID uint   `json:"institution_id"`

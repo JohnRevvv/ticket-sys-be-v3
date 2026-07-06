@@ -8,7 +8,7 @@ import (
 	jwtMiddleware "ideyanale-be/pkg/middleware/jwt"
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
-	institutionController "ideyanale-be/pkg/modules/institution/controller"
+	institutionController "ideyanale-be/pkg/modules/institutions/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
 	ticketController "ideyanale-be/pkg/modules/tickets/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"

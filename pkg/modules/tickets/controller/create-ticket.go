@@ -4,7 +4,7 @@ import (
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
-	InstiScript "ideyanale-be/pkg/modules/institution/script"
+	InstiScript "ideyanale-be/pkg/modules/institutions/script"
 	ticketModel "ideyanale-be/pkg/modules/tickets/model"
 	ticketScript "ideyanale-be/pkg/modules/tickets/script"
 	"ideyanale-be/pkg/services/s3_service"

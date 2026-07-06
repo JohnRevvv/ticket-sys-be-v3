@@ -3,7 +3,7 @@ package script
 import (
 	"errors"
 	"ideyanale-be/pkg/config"
-	"ideyanale-be/pkg/modules/institution/model"
+	"ideyanale-be/pkg/modules/institutions/model"
 	"time"
 
 	"gorm.io/gorm"

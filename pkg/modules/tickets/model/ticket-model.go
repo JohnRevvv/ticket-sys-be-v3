@@ -8,6 +8,7 @@ import (
 type Ticket struct {
 	ID              uint       `gorm:"primaryKey" json:"id"`
 	TicketID        string     `gorm:"uniqueIndex;not null" json:"ticket_id"`
+	ProjectID       uint       `json:"project_id"`
 	InstitutionID   uint       `json:"institution_id"`
 	TicketTypeID    uint       `json:"ticket_type_id"`
 	CategoryID      uint       `json:"category_id"`
@@ -32,14 +33,13 @@ type Ticket struct {
 	CancelledAt        *time.Time `json:"cancelled_at"`
 	CancellationReason string     `json:"cancellation_reason"`
 
-	StartedAt         *time.Time `json:"started_at"`
-	ResolvedAt        *time.Time `json:"resolved_at"`
-	ResolutionMinutes float64    `json:"resolution_minutes"`
-	ResolutionTime    string     `json:"resolution_time" gorm:"column:resolution_time;default:''"`
-	OnHold            bool       `json:"onhold" gorm:"column:on_hold;default:false"`
-	HoldAt            *time.Time `json:"hold_at"`
-	ClosedBy          string     `json:"closed_by"`
-	ClosedAt          *time.Time `json:"closed_at"`
+	StartedAt      *time.Time `json:"started_at"`
+	ResolvedAt     *time.Time `json:"resolved_at"`
+	ResolutionTime string     `json:"resolution_time" gorm:"column:resolution_time;default:''"`
+	OnHold         bool       `json:"onhold" gorm:"column:on_hold;default:false"`
+	HoldAt         *time.Time `json:"hold_at"`
+	ClosedBy       string     `json:"closed_by"`
+	ClosedAt       *time.Time `json:"closed_at"`
 
 	EndorsedAt *time.Time `json:"endorsed_at"`
 	ApprovedAt *time.Time `json:"approved_at"`

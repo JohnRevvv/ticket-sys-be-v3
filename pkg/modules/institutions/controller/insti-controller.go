@@ -6,7 +6,7 @@ import (
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	"ideyanale-be/pkg/middleware/jwt"
 	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
-	InstiScript "ideyanale-be/pkg/modules/institution/script"
+	InstiScript "ideyanale-be/pkg/modules/institutions/script"
 	services "ideyanale-be/pkg/services/s3_service"
 	"regexp"
 	"strconv"
