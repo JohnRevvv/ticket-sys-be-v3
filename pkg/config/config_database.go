@@ -17,6 +17,7 @@ import (
 	Umodel "ideyanale-be/pkg/modules/users/model"
 	Tmodel "ideyanale-be/pkg/modules/tickets/model"
 	Instimodel "ideyanale-be/pkg/modules/institutions/model"
+	Projmodel "ideyanale-be/pkg/modules/projects/model"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -248,6 +249,10 @@ func PostgreSQLConnect() bool {
 				//Institution Model
 				&Instimodel.Institution{},
 				&Instimodel.InstitutionLogo{},
+
+				//Project Model
+				&Projmodel.ServerModel{},
+				&Projmodel.ProjectModel{},
 			)
 
 			if err != nil {

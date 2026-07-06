@@ -9,6 +9,7 @@ import (
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
 	institutionController "ideyanale-be/pkg/modules/institutions/controller"
+	projectController "ideyanale-be/pkg/modules/projects/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
 	ticketController "ideyanale-be/pkg/modules/tickets/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"
@@ -90,11 +91,21 @@ func AppRoutes(app *fiber.App) {
 	protected.Get("/get-user/details/:id", userController.GetUserByID)
 
 	//Institution
-	protected.Post("/add-institution", institutionController.AddInstitution)
-	protected.Get("/institutions", institutionController.GetInstitutions)
-	protected.Post("/edit-institution/:institution_id", institutionController.EditInstitution)
+	institution := apiV1.Group("/institution", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
+	institution.Post("/create", institutionController.AddInstitution)
+	institution.Get("/get", institutionController.GetInstitutions)
+	institution.Post("/edit/:institution_id", institutionController.EditInstitution)
 
 	//Ticket
-	protected.Post("/ticket/create", ticketController.CreateNewTicket)
+	ticket := apiV1.Group("/ticket", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
+	ticket.Post("/create", ticketController.CreateNewTicket)
 
+	//Project
+	project := apiV1.Group("/project", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
+	project.Post("/server/create", projectController.AddServer)
+	project.Post("/create", projectController.AddProject)
+	project.Get("/get/server/:server_id", projectController.GetServerByID)
+	project.Get("/get/project/:project_id", projectController.GetProjectByID)
+	project.Get("/get/servers", projectController.GetServers)
+	project.Get("/get/projects/:server_id", projectController.GetProjects)
 }
