@@ -33,18 +33,6 @@ func GetUsersByInstitutionID(ID string) ([]model.UserDetails, error) {
 	return users, err
 }
 
-// func GetUserByID(ID string) (*model.UserDetails, error) {
-	
-// 	var user model.UserDetails
-
-// 	err := config.DBConnList[0].Table("users").Where("id = ?", ID).First(&user).Error
-// 	if err != nil {
-// 		return nil, err
-// 	}
-	
-// 	return &user, nil
-// }
-
 func GetUserByID(userID int) (model.UserDetails, error) {
 	var user model.UserDetails
 
@@ -55,4 +43,27 @@ func GetUserByID(userID int) (model.UserDetails, error) {
 	`, userID).Scan(&user).Error
 
 	return user, err
+}
+
+func CountUsers() (int64, error) {
+	var count int64
+
+	err := config.DBConnList[0].Raw(`
+		SELECT COUNT(*)
+		FROM users
+	`).Scan(&count).Error
+
+	return count, err
+}
+
+func CountUsersByInstitutionID(institutionID int) (int64, error) {
+	var count int64
+
+	err := config.DBConnList[0].Raw(`
+		SELECT COUNT(*)
+		FROM users
+		WHERE institution_id = ?
+	`, institutionID).Scan(&count).Error
+
+	return count, err
 }

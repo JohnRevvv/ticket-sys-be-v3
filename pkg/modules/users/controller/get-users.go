@@ -9,6 +9,7 @@ import (
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
+	"ideyanale-be/pkg/middleware/jwt"
 	script "ideyanale-be/pkg/modules/users/script"
 )
 
@@ -117,7 +118,33 @@ func GetUserByID(c fiber.Ctx) error {
 	return global.JSONResponseWithDataV1(c, "200", "User fetched successfully", resp, 200,)
 }
 
-// helper (keeps controller clean)
-func now() time.Time {
-	return time.Now()
+func CountUsers(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, fiber.StatusForbidden)
+	}
+
+	inst := c.Locals("institution_id")
+	if inst == nil {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, fiber.StatusUnauthorized)
+	}
+
+	institutionID, ok := inst.(int)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, fiber.StatusInternalServerError)
+	}
+
+	count, err := script.CountUsersByInstitutionID(institutionID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to count users", err, fiber.StatusInternalServerError)
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"User count retrieved successfully",
+		fiber.Map{
+			"count": count,
+		},
+		fiber.StatusOK,
+	)
 }
