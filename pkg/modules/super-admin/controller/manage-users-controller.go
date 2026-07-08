@@ -43,119 +43,67 @@ func ChangeUserRole(c fiber.Ctx) error {
 	}
 
 	type Req struct {
-		Role string `json:"role"`
+		RoleID uint `json:"role_id"`
 	}
 
 	var req Req
 
 	if err := c.Bind().Body(&req); err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"400",
-			"Invalid request body",
-			err,
-			400,
-		)
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid request body", err, 400)
 	}
 
-	if strings.TrimSpace(req.Role) == "" {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"400",
-			"Role is required",
-			nil,
-			400,
-		)
+	if req.RoleID == 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Role ID is required", nil, 400)
 	}
 
-	// Check if role exists
-	role, err := SupAdScript.GetRoleByName(req.Role)
+	// resolve the target role — a specific row, not an ambiguous name
+	role, err := SupAdScript.GetRoleByID(req.RoleID)
 	if err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"404",
-			"Role not found",
-			nil,
-			404,
-		)
+		return global.JSONResponseWithErrorV1(c, "404", "Role not found", nil, 404)
 	}
 
-	// Get current user's role
+	// resolve the target user up front — needed for institution checks either way
+	user, err := UserScript.GetUserByID(userID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "404", "User not found", err, 404)
+	}
+
+	// the role being assigned must belong to the same institution as the target user,
+	// regardless of who's making the change
+	if role.InstitutionID != user.InstitutionID {
+		return global.JSONResponseWithErrorV1(c, "400", "Role does not belong to the user's institution", nil, 400)
+	}
+
 	currentRole, _ := c.Locals("role").(string)
+	currentInstitution, _ := c.Locals("institution_id").(uint)
 
-	// Get current user's institution
-	currentInstitution, _ := c.Locals("institution_id").(int)
-
-	// SUPER ADMIN
+	// SUPER ADMIN — can assign any valid role to any user, no institution restriction
 	if currentRole == "Super-Admin" {
+		if err := SupAdScript.ChangeUserRole(userID, role.RoleID); err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Failed to update role", err, 500)
+		}
+		return global.JSONResponseWithDataV1(c, "200", "User role updated successfully", nil, 200)
+	}
 
-		err = SupAdScript.ChangeUserRole(userID, req.Role)
-		if err != nil {
+	// INSTI ADMIN — restricted to their own institution, both for the role and the target user
+	if currentRole == "Insti-Admin" {
+
+		if user.InstitutionID != currentInstitution {
+			return global.JSONResponseWithErrorV1(c, "403", "You can only manage users in your institution", nil, 403)
+		}
+
+		if role.InstitutionID != currentInstitution {
+			return global.JSONResponseWithErrorV1(c, "403", "You can only assign roles from your institution", nil, 403)
+		}
+
+		if err := SupAdScript.ChangeUserRole(userID, role.RoleID); err != nil {
 			return global.JSONResponseWithErrorV1(c, "500", "Failed to update role", err, 500)
 		}
 
 		return global.JSONResponseWithDataV1(c, "200", "User role updated successfully", nil, 200)
 	}
 
-	// INSTI ADMIN
-	if currentRole == "Insti-Admin" {
-
-		// role must belong to same institution
-		if int(role.InstitutionID) != currentInstitution {
-			return global.JSONResponseWithErrorV1(c, "403", "You can only assign roles from your institution",
-				nil,
-				403,
-			)
-		}
-
-		user, err := UserScript.GetUserByID(userID)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"500",
-				"Failed to fetch user",
-				err,
-				500,
-			)
-		}
-
-		if int(user.InstitutionID) != currentInstitution {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"403",
-				"You can only manage users in your institution",
-				nil,
-				403,
-			)
-		}
-
-		err = SupAdScript.ChangeUserRole(userID, role.RoleName)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(
-				c,
-				"500",
-				"Failed to update role",
-				err,
-				500,
-			)
-		}
-
-		return global.JSONResponseWithDataV1(
-			c,
-			"200",
-			"User role updated successfully",
-			nil,
-			200,
-		)
-	}
-
-	return global.JSONResponseWithErrorV1(
-		c,
-		"403",
-		"Forbidden",
-		nil,
-		403,
-	)
+	return global.JSONResponseWithErrorV1(c, "403", "Forbidden", nil, 403)
 }
 
 func ChangeUserStatus(c fiber.Ctx) error {

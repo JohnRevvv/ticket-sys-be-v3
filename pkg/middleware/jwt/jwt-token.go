@@ -10,6 +10,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// Permissions mirrors the boolean flags on model.Roles.
+type Permissions struct {
+	CanCreateTicket  bool
+	CanEndorseTicket bool
+	CanApproveTicket bool
+	CanResolveTicket bool
+	CanAudit         bool
+}
+
 func RequireRoles(c fiber.Ctx, allowed ...string) error {
 	role, ok := c.Locals("role").(string)
 	if !ok {
@@ -25,6 +34,20 @@ func RequireRoles(c fiber.Ctx, allowed ...string) error {
 	return errors.New("forbidden")
 }
 
+// NEW: permission-based check, for ticketing actions
+func RequirePermission(c fiber.Ctx, check func(Permissions) bool) error {
+	perms, ok := c.Locals("permissions").(Permissions)
+	if !ok {
+		return errors.New("unauthorized")
+	}
+
+	if !check(perms) {
+		return errors.New("forbidden")
+	}
+
+	return nil
+}
+
 func GenerateSuperAdminToken(ID int, username string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":       ID,
@@ -38,15 +61,23 @@ func GenerateSuperAdminToken(ID int, username string) (string, error) {
 	return token.SignedString([]byte(config.JWTSecret))
 }
 
-func GenerateUserToken(ID int, staffID string, institutionID int, role string) (string, error) {
+// UPDATED: institutionID is now uint (matches model.UserDetails), and
+// permission flags are embedded alongside the role name.
+func GenerateUserToken(ID int, staffID string, institutionID uint, roleID uint, roleName string, perms Permissions) (string, error) {
 
 	claims := jwt.MapClaims{
-		"id":       ID,
-		"staff_id": staffID,
-		"institution_id": institutionID,
-		"role":         role,
-		"exp":      time.Now().Add(1 * time.Hour).Unix(),
-		"iat":      time.Now().Unix(),
+		"id":              ID,
+		"staff_id":        staffID,
+		"institution_id":  institutionID,
+		"role_id":         roleID,
+		"role":            roleName,
+		"can_create":      perms.CanCreateTicket,
+		"can_endorse":     perms.CanEndorseTicket,
+		"can_approve":     perms.CanApproveTicket,
+		"can_resolve":     perms.CanResolveTicket,
+		"can_audit":       perms.CanAudit,
+		"exp":             time.Now().Add(1 * time.Hour).Unix(),
+		"iat":             time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -94,12 +125,30 @@ func JWTProtected() fiber.Handler {
 			c.Locals("role", role)
 		}
 
+		// role_id
+		if roleID, ok := claims["role_id"].(float64); ok {
+			c.Locals("role_id", uint(roleID))
+		}
+
 		// institution_id (safe optional field)
 		if inst, ok := claims["institution_id"]; ok && inst != nil {
 			if instFloat, ok := inst.(float64); ok {
-				c.Locals("institution_id", int(instFloat))
+				c.Locals("institution_id", uint(instFloat))
 			}
 		}
+
+		// NEW: rebuild Permissions struct from individual claims
+		getBool := func(key string) bool {
+			v, ok := claims[key].(bool)
+			return ok && v
+		}
+		c.Locals("permissions", Permissions{
+			CanCreateTicket:  getBool("can_create"),
+			CanEndorseTicket: getBool("can_endorse"),
+			CanApproveTicket: getBool("can_approve"),
+			CanResolveTicket: getBool("can_resolve"),
+			CanAudit:         getBool("can_audit"),
+		})
 
 		return c.Next()
 	}

@@ -127,7 +127,6 @@ func LoginWithOTP(c fiber.Ctx) error {
 }
 
 func VerifyOTP(c fiber.Ctx) error {
-	
 
 	var req VerifyOTPReq
 
@@ -164,18 +163,31 @@ func VerifyOTP(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "400", "Invalid OTP", nil, 400)
 	}
 
-	// get user for JWT
+	// get user for JWT — NOTE: must preload Role, see script change below
 	user, err := script.GetActiveUserByStaffID(encStaffID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "404", "User not found", err, 404)
 	}
 
-	// generate JWT
+	// NEW: guard against a user whose role record is missing/deleted
+	if user.Role.RoleID == 0 {
+		return global.JSONResponseWithErrorV1(c, "403", "No valid role assigned to this user", nil, 403)
+	}
+
+	// generate JWT — now passes RoleID + permission flags, not the whole struct
 	token, err := jwt.GenerateUserToken(
 		user.ID,
 		user.StaffID,
 		user.InstitutionID,
-		user.Role,
+		user.Role.RoleID,
+		user.Role.RoleName,
+		jwt.Permissions{
+			CanCreateTicket:  user.Role.CanCreateTicket,
+			CanEndorseTicket: user.Role.CanEndorseTicket,
+			CanApproveTicket: user.Role.CanApproveTicket,
+			CanResolveTicket: user.Role.CanResolveTicket,
+			CanAudit:         user.Role.CanAudit,
+		},
 	)
 
 	if err != nil {
@@ -191,7 +203,8 @@ func VerifyOTP(c fiber.Ctx) error {
 	// cleanup OTP
 	_ = script.DeleteOTPByStaffID(encStaffID)
 
-	middleware.TouchActivity(user.ID, user.Role)
+	// FIXED: TouchActivity expects (int, string) — pass RoleName, not RoleID
+	middleware.TouchActivity(user.ID, user.Role.RoleName)
 
 	// response
 	return global.JSONResponseWithDataV1(
@@ -204,3 +217,81 @@ func VerifyOTP(c fiber.Ctx) error {
 		200,
 	)
 }
+
+// func VerifyOTP(c fiber.Ctx) error {
+
+// 	var req VerifyOTPReq
+
+// 	if err := c.Bind().Body(&req); err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
+// 	}
+
+// 	staffID := strings.TrimSpace(strings.ReplaceAll(req.StaffID, "-", ""))
+
+// 	if len(staffID) != 11 {
+// 		return global.JSONResponseWithErrorV1(c, "400", "Invalid staff ID", nil, 400)
+// 	}
+
+// 	formatted := staffID[:6] + "-" + staffID[6:]
+
+// 	encStaffID, err := encrypDecryptV1.EncryptV1(formatted, config.SecretKey)
+// 	if err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "500", "Encryption failed", err, 500)
+// 	}
+
+// 	// get OTP record
+// 	record, err := script.GetOTPByStaffID(encStaffID)
+// 	if err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "404", "OTP not found", err, 404)
+// 	}
+
+// 	// check expiry
+// 	if time.Now().Unix() > record.ExpiresAt {
+// 		return global.JSONResponseWithErrorV1(c, "400", "OTP expired", nil, 400)
+// 	}
+
+// 	// validate OTP
+// 	if err := bcrypt.CompareHashAndPassword([]byte(record.OTPHash), []byte(req.OTP)); err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "400", "Invalid OTP", nil, 400)
+// 	}
+
+// 	// get user for JWT
+// 	user, err := script.GetActiveUserByStaffID(encStaffID)
+// 	if err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "404", "User not found", err, 404)
+// 	}
+
+// 	// generate JWT
+// 	token, err := jwt.GenerateUserToken(
+// 		user.ID,
+// 		user.StaffID,
+// 		user.InstitutionID,
+// 		user.Role,
+// 	)
+
+// 	if err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "500", "Failed to generate token", err, 500)
+// 	}
+
+// 	// update login status
+// 	err = script.SetUserLoginStatus(user.ID, true)
+// 	if err != nil {
+// 		return global.JSONResponseWithErrorV1(c, "500", "Failed to update login status", err, 500)
+// 	}
+
+// 	// cleanup OTP
+// 	_ = script.DeleteOTPByStaffID(encStaffID)
+
+// 	middleware.TouchActivity(user.ID, user.Role)
+
+// 	// response
+// 	return global.JSONResponseWithDataV1(
+// 		c,
+// 		"200",
+// 		"Login successful",
+// 		map[string]any{
+// 			"token": token,
+// 		},
+// 		200,
+// 	)
+// }

@@ -23,10 +23,10 @@ func RegisterUser(c fiber.Ctx) error {
 		FirstName       string `json:"first_name"`
 		LastName        string `json:"last_name"`
 		PhoneNo         string `json:"phone_no"`
-		InstitutionID   int    `json:"institution_id"`
-		InstitutionName string `json:"institution_name"`
+		InstitutionID   uint   `json:"institution_id"`
 		JobPosition     string `json:"job_position"`
 		Status          string `json:"status"`
+		// RoleID removed — always defaults to "User" on registration
 	}
 
 	var req Req
@@ -59,19 +59,12 @@ func RegisterUser(c fiber.Ctx) error {
 	lastName := strings.TrimSpace(req.LastName)
 	email := strings.ToLower(strings.TrimSpace(req.Email))
 	phoneNo := strings.TrimSpace(req.PhoneNo)
-	institutionName := strings.TrimSpace(req.InstitutionName)
 	jobPosition := strings.TrimSpace(req.JobPosition)
 
-	//validations
+	// validations
 	emailParts := strings.Split(email, "@")
 	if len(emailParts) != 2 {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"400",
-			"Invalid email format",
-			nil,
-			400,
-		)
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid email format", nil, 400)
 	}
 
 	username := emailParts[0]
@@ -94,6 +87,22 @@ func RegisterUser(c fiber.Ctx) error {
 
 	if phoneNo == "" {
 		return global.JSONResponseWithErrorV1(c, "400", "Phone number is required", nil, 400)
+	}
+
+	if req.InstitutionID == 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Institution ID is required", nil, 400)
+	}
+
+	// default status if not supplied
+	status := strings.TrimSpace(req.Status)
+	if status == "" {
+		status = "active"
+	}
+
+	// NEW: resolve the default "User" role for this institution — never trust client-supplied role_id
+	defaultRoleID, err := script.GetDefaultUserRoleID(req.InstitutionID)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to resolve default role", err, 500)
 	}
 
 	// -------------------------
@@ -133,11 +142,6 @@ func RegisterUser(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Encrypt phone number failed", err, 500)
 	}
 
-	encInstitutionName, err := encrypt(institutionName)
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Encrypt institution name failed", err, 500)
-	}
-
 	// check duplicates after encryption
 	exists, err := script.UserExists(encStaffID, encEmail, encPhoneNo)
 	if err != nil {
@@ -159,8 +163,9 @@ func RegisterUser(c fiber.Ctx) error {
 		Email:           encEmail,
 		PhoneNo:         encPhoneNo,
 		InstitutionID:   req.InstitutionID,
-		InstitutionName: encInstitutionName,
 		JobPosition:     jobPosition,
+		RoleID:          defaultRoleID, // always "User" on self-registration
+		Status:          status,
 	})
 
 	if err != nil {

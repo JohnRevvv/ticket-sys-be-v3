@@ -32,16 +32,26 @@ func GetUserByID(c fiber.Ctx) error {
 
 	userID, err := strconv.Atoi(c.Params("id"))
 	if err != nil || userID <= 0 {
-		return global.JSONResponseWithErrorV1(c, "400", "Invalid user id", nil, 400,)
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid user id", nil, 400)
 	}
 
 	user, err := script.GetUserByID(userID)
 	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch user", err, 500,)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch user", err, 500)
 	}
 
 	if user.ID == 0 {
-		return global.JSONResponseWithErrorV1(c, "404", "User not found", nil, 404,)
+		return global.JSONResponseWithErrorV1(c, "404", "User not found", nil, 404)
+	}
+
+	type RoleResp struct {
+		RoleID           uint   `json:"role_id"`
+		RoleName         string `json:"role_name"`
+		CanCreateTicket  bool   `json:"can_create"`
+		CanEndorseTicket bool   `json:"can_endorse"`
+		CanApproveTicket bool   `json:"can_approve"`
+		CanResolveTicket bool   `json:"can_resolve"`
+		CanAudit         bool   `json:"can_audit"`
 	}
 
 	type UserDetailsResp struct {
@@ -52,10 +62,10 @@ func GetUserByID(c fiber.Ctx) error {
 		LastName        string    `json:"last_name,omitempty"`
 		Email           string    `json:"email,omitempty"`
 		PhoneNo         string    `json:"phone_no,omitempty"`
-		InstitutionID   int       `json:"institution_id,omitempty"`
+		InstitutionID   uint      `json:"institution_id,omitempty"`
 		InstitutionName string    `json:"institution_name,omitempty"`
 		JobPosition     string    `json:"job_position,omitempty"`
-		Role            string    `json:"role"`
+		Role            RoleResp  `json:"role"`
 		Status          string    `json:"status"`
 		LastLogin       string    `json:"last_login,omitempty"`
 		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
@@ -108,14 +118,22 @@ func GetUserByID(c fiber.Ctx) error {
 		InstitutionID:   user.InstitutionID,
 		InstitutionName: decryptedInstitutionName,
 		JobPosition:     user.JobPosition,
-		Role:            user.Role,
-		Status:          user.Status,
-		LastLogin:       user.LastLogin,
-		IsLoggedIn:      user.IsLoggedIn,
-		CreatedAt:       user.CreatedAt,
+		Role: RoleResp{
+			RoleID:           user.Role.RoleID,
+			RoleName:         user.Role.RoleName,
+			CanCreateTicket:  user.Role.CanCreateTicket,
+			CanEndorseTicket: user.Role.CanEndorseTicket,
+			CanApproveTicket: user.Role.CanApproveTicket,
+			CanResolveTicket: user.Role.CanResolveTicket,
+			CanAudit:         user.Role.CanAudit,
+		},
+		Status:     user.Status,
+		LastLogin:  user.LastLogin,
+		IsLoggedIn: user.IsLoggedIn,
+		CreatedAt:  user.CreatedAt,
 	}
 
-	return global.JSONResponseWithDataV1(c, "200", "User fetched successfully", resp, 200,)
+	return global.JSONResponseWithDataV1(c, "200", "User fetched successfully", resp, 200)
 }
 
 func CountUsers(c fiber.Ctx) error {

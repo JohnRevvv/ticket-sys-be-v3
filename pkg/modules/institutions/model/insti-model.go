@@ -4,6 +4,7 @@ import (
 	"time"
 
 	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
+	Rolemodel "ideyanale-be/pkg/modules/roles/model"
 )
 
 type (
@@ -16,7 +17,7 @@ type (
 		Status           string `gorm:"default:'active';not null" json:"status"`
 
 		JobPosition     []IAdmodel.JobPosition `gorm:"foreignKey:InstitutionID"`
-		Role            []IAdmodel.Roles       `gorm:"foreignKey:InstitutionID"`
+		Role            []Rolemodel.Roles       `gorm:"foreignKey:InstitutionID"`
 		InstitutionLogo InstitutionLogo        `gorm:"foreignKey:InstitutionID"`
 
 		CreatedAt time.Time `json:"created_at"`

@@ -10,6 +10,7 @@ import (
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
 	institutionController "ideyanale-be/pkg/modules/institutions/controller"
 	projectController "ideyanale-be/pkg/modules/projects/controller"
+	roleController "ideyanale-be/pkg/modules/roles/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
 	ticketController "ideyanale-be/pkg/modules/tickets/controller"
 	userController "ideyanale-be/pkg/modules/users/controller"
@@ -71,8 +72,6 @@ func AppRoutes(app *fiber.App) {
 	protected.Post("/add-ticket-types", instiadminController.AddTicketType)
 	protected.Post("/add-category", instiadminController.AddCategory)
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)
-	protected.Post("/add-new-role", instiadminController.AddRole)
-	protected.Patch("/user/change-role/:id", superadminController.ChangeUserRole)
 
 	protected.Patch("/edit-ticket-type-info/:ticket_type_id", instiadminController.EditTicketType)
 	protected.Patch("/edit-category-info/:category_id", instiadminController.EditCategory)
@@ -89,6 +88,13 @@ func AppRoutes(app *fiber.App) {
 	//User
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUserByID)
+
+	//Role
+	role := apiV1.Group("/role", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
+	role.Post("/add", roleController.AddRole)
+	role.Patch("/change/:id", superadminController.ChangeUserRole)
+	role.Get("/get/:institution_id", roleController.GetRolesByInstitutionHandler)
+	role.Patch("/edit/:id", roleController.EditRoleHandler)
 
 	//Institution
 	institution := apiV1.Group("/institution", jwtMiddleware.JWTProtected(), middleware.AutoLogout())

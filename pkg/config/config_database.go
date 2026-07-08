@@ -18,6 +18,7 @@ import (
 	Tmodel "ideyanale-be/pkg/modules/tickets/model"
 	Instimodel "ideyanale-be/pkg/modules/institutions/model"
 	Projmodel "ideyanale-be/pkg/modules/projects/model"
+	Rolemodel "ideyanale-be/pkg/modules/roles/model"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -240,7 +241,9 @@ func PostgreSQLConnect() bool {
 				&IAdmodel.TicketType{},
 				&IAdmodel.Category{},
 				&IAdmodel.SubCategory{},
-				&IAdmodel.Roles{},
+
+				//Role Model
+				&Rolemodel.Roles{},
 
 				//Ticket Model
 				&Tmodel.Ticket{},

@@ -7,6 +7,7 @@ import (
 	"ideyanale-be/pkg/middleware/jwt"
 	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
 	InstiScript "ideyanale-be/pkg/modules/institutions/script"
+	RoleScript "ideyanale-be/pkg/modules/roles/script"
 	services "ideyanale-be/pkg/services/s3_service"
 	"regexp"
 	"strconv"
@@ -94,7 +95,7 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default positions", err, 500)
 	}
 
-	if err := InsAdScript.AddDefaultRoles(uint(institutionID)); err != nil {
+	if err := RoleScript.AddDefaultRoles(uint(institutionID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default roles", err, 500)
 	}
 

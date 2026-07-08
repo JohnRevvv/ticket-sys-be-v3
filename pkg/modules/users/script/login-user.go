@@ -22,6 +22,7 @@ func GetActiveUserByStaffID(encStaffID string) (*model.UserDetails, error) {
 	db := config.DBConnList[0]
 
 	err := db.
+		Preload("Role").
 		Table("users").
 		Where("staff_id = ? AND status = ?", encStaffID, "active").
 		First(&user).Error

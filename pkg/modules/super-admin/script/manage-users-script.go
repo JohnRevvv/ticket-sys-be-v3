@@ -3,7 +3,7 @@ package script
 import (
 	"fmt"
 	"ideyanale-be/pkg/config"
-	"ideyanale-be/pkg/modules/insti-admin/model"
+	Rolemodel "ideyanale-be/pkg/modules/roles/model"
 )
 
 func ChangeRoleToAdmin(userID int)error {
@@ -16,17 +16,27 @@ func ChangeRoleToAdmin(userID int)error {
 	).Error
 }
 
-func ChangeUserRole(userID int, role string) error {
-	return config.DBConnList[0].Exec(`
-		UPDATE users
-		SET role = ?,
-			updated_at = NOW()
-		WHERE id = ?
-	`, role, userID).Error
+func GetRoleByID(roleID uint) (Rolemodel.Roles, error) {
+	var role Rolemodel.Roles
+
+	err := config.DBConnList[0].
+		Where("role_id = ? AND deleted_at IS NULL", roleID).
+		First(&role).Error
+
+	return role, err
 }
 
-func GetRoleByName(roleName string) (model.Roles, error) {
-	var role model.Roles
+func ChangeUserRole(userID int, roleID uint) error {
+	return config.DBConnList[0].Exec(`
+		UPDATE users
+		SET role_id = ?,
+			updated_at = NOW()
+		WHERE id = ?
+	`, roleID, userID).Error
+}
+
+func GetRoleByName(roleName string) (Rolemodel.Roles, error) {
+	var role Rolemodel.Roles
 
 	err := config.DBConnList[0].Raw(`
 		SELECT *
@@ -34,18 +44,6 @@ func GetRoleByName(roleName string) (model.Roles, error) {
 		WHERE role_name = ?
 		LIMIT 1
 	`, roleName).Scan(&role).Error
-
-	return role, err
-}
-
-func GetRoleByID(roleID uint) (model.Roles, error) {
-	var role model.Roles
-
-	err := config.DBConnList[0].Raw(`
-		SELECT *
-		FROM roles
-		WHERE role_id = ?
-	`, roleID).Scan(&role).Error
 
 	return role, err
 }

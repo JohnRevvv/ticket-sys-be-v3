@@ -18,13 +18,13 @@ func CreateUser(user *model.UserDetails) error {
 			email,
 			phone_no,
 			institution_id,
-			institution_name,
-			role,
+			role_id,
 			job_position,
 			status,
-			created_at
+			created_at,
+			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'User', ?, 'pending', ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		user.Username,
 		user.StaffID,
@@ -33,8 +33,10 @@ func CreateUser(user *model.UserDetails) error {
 		user.Email,
 		user.PhoneNo,
 		user.InstitutionID,
-		user.InstitutionName,
+		user.RoleID,
 		user.JobPosition,
+		user.Status,
+		time.Now(),
 		time.Now(),
 	).Error
 }
@@ -62,23 +64,4 @@ func UserExists(staffID, email, phoneNo string) (bool, error) {
 
 	return exists, nil
 }
-
-// func UserExists(staffID, email, phoneNo string) (bool, error) {
-// 	db, err := getDB()
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	var count int64
-
-// 	err = db.Table("users").
-// 		Where("staff_id = ? OR email = ? OR phone_no = ?", staffID, email, phoneNo).
-// 		Count(&count).Error
-
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	return count > 0, nil
-// }
 
