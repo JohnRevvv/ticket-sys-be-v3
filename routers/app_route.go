@@ -60,6 +60,7 @@ func AppRoutes(app *fiber.App) {
 	protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
 
 	//Super Admin
+	protected.Get("/get-super-admin/:id", superadminController.GetSuperAdminByID)
 	protected.Patch("/change-role-admin/:id", superadminController.ChangeRoleToAdmin)
 	protected.Patch("/user/:id/status", superadminController.ChangeUserStatus)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
@@ -111,7 +112,7 @@ func AppRoutes(app *fiber.App) {
 	project.Post("/server/create", projectController.AddServer)
 	project.Post("/create", projectController.AddProject)
 	project.Get("/get/server/:server_id", projectController.GetServerByID)
-	project.Get("/get/project/:project_id", projectController.GetProjectByID)
+	project.Get("/get/:project_id", projectController.GetProjectByID)
 	project.Get("/get/servers", projectController.GetServers)
 	project.Get("/get/projects/:server_id", projectController.GetProjects)
 }

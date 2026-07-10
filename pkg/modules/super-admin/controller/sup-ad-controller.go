@@ -7,6 +7,7 @@ import (
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	hashingV1 "ideyanale-be/pkg/middleware/hashing/v1"
 	"ideyanale-be/pkg/middleware/jwt"
+	"strconv"
 	"strings"
 
 	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
@@ -175,4 +176,45 @@ func LogoutSuperAdmin(c fiber.Ctx) error {
 	}
 
 	return global.JSONResponseWithDataV1(c, "200", "Logout successful", nil, 200)
+}
+
+func GetSuperAdminByID(c fiber.Ctx) error {
+
+	if err := jwt.RequireRoles(c, "Super-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid super admin ID", nil, 400)
+	}
+
+	superAdmin, err := script.GetSuperAdminByID(id)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to retrieve super admin", err, 500)
+	}
+
+	if superAdmin == nil || superAdmin.ID == 0 {
+		return global.JSONResponseWithErrorV1(c, "404", "Super admin not found", nil, 404)
+	}
+
+	// Decrypt username
+	superAdmin.UserName, err = encrypDecryptV1.DecryptV1(superAdmin.UserName, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to decrypt username", err, 500)
+	}
+
+	// Decrypt email
+	superAdmin.Email, err = encrypDecryptV1.DecryptV1(superAdmin.Email, config.SecretKey)
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to decrypt email", err, 500)
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"Super admin retrieved successfully",
+		superAdmin,
+		200,
+	)
 }
