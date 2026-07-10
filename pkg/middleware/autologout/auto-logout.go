@@ -173,3 +173,4 @@ func AutoLogout() fiber.Handler {
 func TouchActivity(id int, role string) {
 	tracker.touch(id, role)
 }
+ 
