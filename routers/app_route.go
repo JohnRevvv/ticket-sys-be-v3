@@ -89,6 +89,8 @@ func AppRoutes(app *fiber.App) {
 	//User
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUserByID)
+	protected.Get("/get-users/:institution_id", userController.GetUsersByInstitutionID)
+	protected.Get("/get-all-users", userController.GetAllUsers)
 
 	//Role
 	role := apiV1.Group("/role", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
@@ -102,6 +104,7 @@ func AppRoutes(app *fiber.App) {
 	institution.Post("/create", institutionController.AddInstitution)
 	institution.Get("/get", institutionController.GetInstitutions)
 	institution.Post("/edit/:institution_id", institutionController.EditInstitution)
+	institution.Patch("/change-status/:institution_id", institutionController.ChangeInstitutionStatus)
 
 	//Ticket
 	ticket := apiV1.Group("/ticket", jwtMiddleware.JWTProtected(), middleware.AutoLogout())

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"errors"
+	"fmt"
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
@@ -115,6 +117,7 @@ func GetInstitutions(c fiber.Ctx) error {
 		InstitutionCode string `json:"institution_code"`
 		InstitutionName string `json:"institution_name"`
 		Description     string `json:"description"`
+		Status          string `json:"status"`
 	}
 
 	data := make([]InstitutionResp, 0, len(rows))
@@ -141,6 +144,7 @@ func GetInstitutions(c fiber.Ctx) error {
 			InstitutionCode: decryptedCode,
 			InstitutionName: decryptedName,
 			Description:     decryptedDesc,
+			Status:          r.Status,
 		})
 	}
 
@@ -195,7 +199,6 @@ func EditInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Update institution failed", err, 500)
 	}
 
-
 	var s3Service, _ = services.NewS3Service()
 	// Optional logo upload
 	fileHeader, err := c.FormFile("logo")
@@ -218,4 +221,55 @@ func EditInstitution(c fiber.Ctx) error {
 	}
 
 	return global.JSONResponseV1(c, "200", "Institution updated successfully", 200)
+}
+
+func ChangeInstitutionStatus(c fiber.Ctx) error {
+	if err := jwt.RequireRoles(c, "Super-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+	institutionID, err := strconv.Atoi(c.Params("institution_id"))
+	if err != nil || institutionID <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid institution id", err, 400)
+	}
+
+	type Req struct {
+		Status string `json:"status"`
+	}
+
+	var req Req
+
+	if err := c.Bind().Body(&req); err != nil {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid request", err, 400)
+	}
+
+	status := strings.TrimSpace(strings.ToLower(req.Status))
+
+	switch status {
+	case "active", "inactive":
+		// valid
+	default:
+		return global.JSONResponseWithErrorV1(
+			c,
+			"400",
+			"Invalid status",
+			errors.New("status must be active or inactive"),
+			400,
+		)
+	}
+
+	fmt.Println("Institution ID:", institutionID)
+	fmt.Println("Status:", status)
+
+	if err := InstiScript.ChangeInstitutionStatus(uint(institutionID), status); err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to change institution status", err, 500)
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"Institution status updated successfully",
+		nil,
+		200,
+	)
 }

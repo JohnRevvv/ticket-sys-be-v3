@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -25,7 +26,208 @@ func GetUsersByInstitutionID(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch users", err, 500)
 	}
 
-	return global.JSONResponseWithDataV1(c, "200", "Users fetched successfully", users, 200)
+	type RoleResp struct {
+		RoleID           uint   `json:"role_id"`
+		RoleName         string `json:"role_name"`
+		CanCreateTicket  bool   `json:"can_create"`
+		CanEndorseTicket bool   `json:"can_endorse"`
+		CanApproveTicket bool   `json:"can_approve"`
+		CanResolveTicket bool   `json:"can_resolve"`
+		CanAudit         bool   `json:"can_audit"`
+	}
+
+	type UserDetailsResp struct {
+		ID              int       `json:"id,omitempty"`
+		Username        string    `json:"username,omitempty"`
+		StaffID         string    `json:"staff_id,omitempty"`
+		FirstName       string    `json:"first_name,omitempty"`
+		LastName        string    `json:"last_name,omitempty"`
+		Email           string    `json:"email,omitempty"`
+		PhoneNo         string    `json:"phone_no,omitempty"`
+		InstitutionID   uint      `json:"institution_id,omitempty"`
+		InstitutionName string    `json:"institution_name,omitempty"`
+		JobPosition     string    `json:"job_position,omitempty"`
+		Role            RoleResp  `json:"role"`
+		Status          string    `json:"status"`
+		LastLogin       string    `json:"last_login,omitempty"`
+		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
+		CreatedAt       time.Time `json:"created_at"`
+	}
+
+	response := make([]UserDetailsResp, 0, len(users))
+
+	for _, user := range users {
+
+		decryptedUsername, err := encrypDecryptV1.DecryptV1(user.Username, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt username failed", err, 500)
+		}
+
+		decryptedStaffID, err := encrypDecryptV1.DecryptV1(user.StaffID, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt staff ID failed", err, 500)
+		}
+
+		decryptedFirstName, err := encrypDecryptV1.DecryptV1(user.FirstName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt first name failed", err, 500)
+		}
+
+		decryptedLastName, err := encrypDecryptV1.DecryptV1(user.LastName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt last name failed", err, 500)
+		}
+
+		decryptedEmail, err := encrypDecryptV1.DecryptV1(user.Email, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt email failed", err, 500)
+		}
+
+		decryptedPhoneNo, err := encrypDecryptV1.DecryptV1(user.PhoneNo, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt phone number failed", err, 500)
+		}
+
+		decryptedInstitutionName, err := encrypDecryptV1.DecryptV1(user.InstitutionName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
+		}
+
+				fmt.Println(user.RoleID)
+fmt.Println(user.Role.RoleID)
+
+		response = append(response, UserDetailsResp{
+			ID:              user.ID,
+			Username:        decryptedUsername,
+			StaffID:         decryptedStaffID,
+			FirstName:       decryptedFirstName,
+			LastName:        decryptedLastName,
+			Email:           decryptedEmail,
+			PhoneNo:         decryptedPhoneNo,
+			InstitutionID:   user.InstitutionID,
+			InstitutionName: decryptedInstitutionName,
+			JobPosition:     user.JobPosition,
+			Role: RoleResp{
+				RoleID:           user.Role.RoleID,
+				RoleName:         user.Role.RoleName,
+				CanCreateTicket:  user.Role.CanCreateTicket,
+				CanEndorseTicket: user.Role.CanEndorseTicket,
+				CanApproveTicket: user.Role.CanApproveTicket,
+				CanResolveTicket: user.Role.CanResolveTicket,
+				CanAudit:         user.Role.CanAudit,
+			},
+			Status:     user.Status,
+			LastLogin:  user.LastLogin,
+			IsLoggedIn: user.IsLoggedIn,
+			CreatedAt:  user.CreatedAt,
+		})
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Users fetched successfully", response, 200)
+}
+
+func GetAllUsers(c fiber.Ctx) error {
+
+	users, err := script.GetAllUsers()
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch users", err, 500)
+	}
+
+	type RoleResp struct {
+		RoleID           uint   `json:"role_id"`
+		RoleName         string `json:"role_name"`
+		CanCreateTicket  bool   `json:"can_create"`
+		CanEndorseTicket bool   `json:"can_endorse"`
+		CanApproveTicket bool   `json:"can_approve"`
+		CanResolveTicket bool   `json:"can_resolve"`
+		CanAudit         bool   `json:"can_audit"`
+	}
+
+	type UserDetailsResp struct {
+		ID              int       `json:"id,omitempty"`
+		Username        string    `json:"username,omitempty"`
+		StaffID         string    `json:"staff_id,omitempty"`
+		FirstName       string    `json:"first_name,omitempty"`
+		LastName        string    `json:"last_name,omitempty"`
+		Email           string    `json:"email,omitempty"`
+		PhoneNo         string    `json:"phone_no,omitempty"`
+		InstitutionID   uint      `json:"institution_id,omitempty"`
+		InstitutionName string    `json:"institution_name,omitempty"`
+		JobPosition     string    `json:"job_position,omitempty"`
+		Role            RoleResp  `json:"role"`
+		Status          string    `json:"status"`
+		LastLogin       string    `json:"last_login,omitempty"`
+		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
+		CreatedAt       time.Time `json:"created_at"`
+	}
+
+	response := make([]UserDetailsResp, 0, len(users))
+
+	for _, user := range users {
+
+		decryptedUsername, err := encrypDecryptV1.DecryptV1(user.Username, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt username failed", err, 500)
+		}
+
+		decryptedStaffID, err := encrypDecryptV1.DecryptV1(user.StaffID, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt staff ID failed", err, 500)
+		}
+
+		decryptedFirstName, err := encrypDecryptV1.DecryptV1(user.FirstName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt first name failed", err, 500)
+		}
+
+		decryptedLastName, err := encrypDecryptV1.DecryptV1(user.LastName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt last name failed", err, 500)
+		}
+
+		decryptedEmail, err := encrypDecryptV1.DecryptV1(user.Email, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt email failed", err, 500)
+		}
+
+		decryptedPhoneNo, err := encrypDecryptV1.DecryptV1(user.PhoneNo, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt phone number failed", err, 500)
+		}
+
+		decryptedInstitutionName, err := encrypDecryptV1.DecryptV1(user.InstitutionName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
+		}
+
+		response = append(response, UserDetailsResp{
+			ID:              user.ID,
+			Username:        decryptedUsername,
+			StaffID:         decryptedStaffID,
+			FirstName:       decryptedFirstName,
+			LastName:        decryptedLastName,
+			Email:           decryptedEmail,
+			PhoneNo:         decryptedPhoneNo,
+			InstitutionID:   user.InstitutionID,
+			InstitutionName: decryptedInstitutionName,
+			JobPosition:     user.JobPosition,
+			Role: RoleResp{
+				RoleID:           user.Role.RoleID,
+				RoleName:         user.Role.RoleName,
+				CanCreateTicket:  user.Role.CanCreateTicket,
+				CanEndorseTicket: user.Role.CanEndorseTicket,
+				CanApproveTicket: user.Role.CanApproveTicket,
+				CanResolveTicket: user.Role.CanResolveTicket,
+				CanAudit:         user.Role.CanAudit,
+			},
+			Status:     user.Status,
+			LastLogin:  user.LastLogin,
+			IsLoggedIn: user.IsLoggedIn,
+			CreatedAt:  user.CreatedAt,
+		})
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Users fetched successfully", response, 200)
 }
 
 func GetUserByID(c fiber.Ctx) error {

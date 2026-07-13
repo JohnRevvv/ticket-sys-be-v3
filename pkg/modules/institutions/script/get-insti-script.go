@@ -41,6 +41,7 @@ func GetInstitutions() ([]model.Institution, error) {
 			institution_code,
 			institution_name,
 			description,
+			status,
 			created_at
 		FROM institutions
 	`).Scan(&institutions).Error
