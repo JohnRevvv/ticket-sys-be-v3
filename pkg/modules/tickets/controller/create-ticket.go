@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"gorm.io/gorm"
 )
 
 type CreateTicketRequest struct {
@@ -256,4 +258,126 @@ func CreateNewTicket(c fiber.Ctx) error {
 	}
 
 	return global.JSONResponseWithDataV1(c, "200", "Ticket created successfully", ticketWithAttachments, 200)
+}
+
+func GetAllTickets(c fiber.Ctx) error {
+	tickets, err := ticketScript.GetAllTickets()
+	if err != nil {
+		return global.JSONResponseWithErrorV1(
+			c,
+			"500",
+			"Failed to fetch tickets",
+			err,
+			500,
+		)
+	}
+
+	for i := range tickets {
+		if tickets[i].Subject != "" {
+			subject, err := encrypDecryptV1.DecryptV1(tickets[i].Subject, config.SecretKey)
+			if err != nil {
+				return global.JSONResponseWithErrorV1(
+					c,
+					"500",
+					"Failed to decrypt subject",
+					err,
+					500,
+				)
+			}
+			tickets[i].Subject = subject
+		}
+
+		if tickets[i].Description != "" {
+			description, err := encrypDecryptV1.DecryptV1(tickets[i].Description, config.SecretKey)
+			if err != nil {
+				return global.JSONResponseWithErrorV1(
+					c,
+					"500",
+					"Failed to decrypt description",
+					err,
+					500,
+				)
+			}
+			tickets[i].Description = description
+		}
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"Tickets fetched successfully",
+		tickets,
+		200,
+	)
+}
+
+func GetTicketByTicketID(c fiber.Ctx) error {
+	ticketID := strings.TrimSpace(c.Params("ticket_id"))
+
+	if ticketID == "" {
+		return global.JSONResponseWithErrorV1(
+			c,
+			"400",
+			"Ticket ID is required",
+			nil,
+			400,
+		)
+	}
+
+	ticket, err := ticketScript.GetTicketByTicketID(ticketID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return global.JSONResponseWithErrorV1(
+				c,
+				"404",
+				"Ticket not found",
+				nil,
+				404,
+			)
+		}
+
+		return global.JSONResponseWithErrorV1(
+			c,
+			"500",
+			"Failed to fetch ticket",
+			err,
+			500,
+		)
+	}
+
+	if ticket.Subject != "" {
+		subject, err := encrypDecryptV1.DecryptV1(ticket.Subject, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(
+				c,
+				"500",
+				"Failed to decrypt subject",
+				err,
+				500,
+			)
+		}
+		ticket.Subject = subject
+	}
+
+	if ticket.Description != "" {
+		description, err := encrypDecryptV1.DecryptV1(ticket.Description, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(
+				c,
+				"500",
+				"Failed to decrypt description",
+				err,
+				500,
+			)
+		}
+		ticket.Description = description
+	}
+
+	return global.JSONResponseWithDataV1(
+		c,
+		"200",
+		"Ticket fetched successfully",
+		ticket,
+		200,
+	)
 }

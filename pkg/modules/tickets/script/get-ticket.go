@@ -90,3 +90,17 @@ func GetTicketsByUserID(userID uint) ([]ticketModel.Ticket, error) {
 
 	return tickets, nil
 }
+
+func GetAllTickets() ([]ticketModel.Ticket, error) {
+	var tickets []ticketModel.Ticket
+
+	err := config.DBConnList[0].
+		Preload("TicketAttachment").
+		Find(&tickets).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tickets, nil
+}
