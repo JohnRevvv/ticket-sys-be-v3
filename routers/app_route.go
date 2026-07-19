@@ -56,6 +56,13 @@ func AppRoutes(app *fiber.App) {
 	public.Post("/register-user", userController.RegisterUser)
 	public.Post("/login/super-admin", superadminController.LoginSuperAdmin)
 
+	// Public institution list — used by the registration page before the user
+	// has a session. Kept under /public (not /institution/public) because
+	// Fiber's Group middleware is prefix-matched: JWTProtected() attached to
+	// the /institution group below would otherwise also catch any route that
+	// starts with /institution, including /institution/public/....
+	public.Get("/institution/get", institutionController.GetInstitutionsPublic)
+
 	// protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected())
 	protected := apiV1.Group("/protected", jwtMiddleware.JWTProtected(), middleware.AutoLogout())
 

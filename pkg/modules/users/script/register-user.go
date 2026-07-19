@@ -3,9 +3,8 @@ package script
 import (
 	"ideyanale-be/pkg/config"
 	"ideyanale-be/pkg/modules/users/model"
-	
-	"time"
 
+	"time"
 )
 
 func CreateUser(user *model.UserDetails) error {
@@ -24,7 +23,7 @@ func CreateUser(user *model.UserDetails) error {
 			created_at,
 			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		user.Username,
 		user.StaffID,
@@ -64,4 +63,3 @@ func UserExists(staffID, email, phoneNo string) (bool, error) {
 
 	return exists, nil
 }
-

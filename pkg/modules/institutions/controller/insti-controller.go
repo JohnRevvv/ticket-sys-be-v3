@@ -151,6 +151,58 @@ func GetInstitutions(c fiber.Ctx) error {
 	return global.JSONResponseWithDataV1(c, "200", "Institutions fetched successfully", data, 200)
 }
 
+func GetInstitutionsPublic(c fiber.Ctx) error {
+ 
+	// fetch from script layer (DB only)
+	rows, err := InstiScript.GetInstitutions()
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch institutions", err, 500)
+	}
+ 
+	type InstitutionResp struct {
+		InstitutionID   uint   `json:"institution_id"`
+		InstitutionCode string `json:"institution_code"`
+		InstitutionName string `json:"institution_name"`
+		Description     string `json:"description"`
+		Status          string `json:"status"`
+	}
+ 
+	data := make([]InstitutionResp, 0, len(rows))
+ 
+	for _, r := range rows {
+ 
+		// Skip inactive institutions — registration should only offer active ones
+		if r.Status != "active" {
+			continue
+		}
+ 
+		decryptedCode, err := encrypDecryptV1.DecryptV1(r.InstitutionCode, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution code failed", err, 500)
+		}
+ 
+		decryptedName, err := encrypDecryptV1.DecryptV1(r.InstitutionName, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
+		}
+ 
+		decryptedDesc, err := encrypDecryptV1.DecryptV1(r.Description, config.SecretKey)
+		if err != nil {
+			return global.JSONResponseWithErrorV1(c, "500", "Decrypt description failed", err, 500)
+		}
+ 
+		data = append(data, InstitutionResp{
+			InstitutionID:   r.InstitutionID,
+			InstitutionCode: decryptedCode,
+			InstitutionName: decryptedName,
+			Description:     decryptedDesc,
+			Status:          r.Status,
+		})
+	}
+ 
+	return global.JSONResponseWithDataV1(c, "200", "Institutions fetched successfully", data, 200)
+}
+
 func EditInstitution(c fiber.Ctx) error {
 	if err := jwt.RequireRoles(c, "Super-Admin", "Insti-Admin"); err != nil {
 		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
