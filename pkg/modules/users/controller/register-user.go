@@ -1,13 +1,13 @@
 package controller
 
 import (
-
 	"strconv"
 	"strings"
 
 	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
+	"ideyanale-be/pkg/middleware/jwt"
 
 	"ideyanale-be/pkg/modules/users/model"
 	"ideyanale-be/pkg/modules/users/script"
@@ -17,16 +17,29 @@ import (
 
 func RegisterUser(c fiber.Ctx) error {
 
+	if err := jwt.RequireRoles(c, "Insti-Admin"); err != nil {
+		return global.JSONResponseWithErrorV1(c, "403", "Forbidden", err, 403)
+	}
+
+		inst := c.Locals("institution_id")
+	if inst == nil {
+		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
+	}
+
+	institutionID, ok := inst.(uint)
+	if !ok {
+		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
+	}
+
+
 	type Req struct {
 		StaffID         string `json:"staff_id"`
 		Email           string `json:"email"`
 		FirstName       string `json:"first_name"`
 		LastName        string `json:"last_name"`
 		PhoneNo         string `json:"phone_no"`
-		InstitutionID   uint   `json:"institution_id"`
 		JobPosition     string `json:"job_position"`
 		Status          string `json:"status"`
-		// RoleID removed — always defaults to "User" on registration
 	}
 
 	var req Req
@@ -89,7 +102,7 @@ func RegisterUser(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "400", "Phone number is required", nil, 400)
 	}
 
-	if req.InstitutionID == 0 {
+	if institutionID == 0 {
 		return global.JSONResponseWithErrorV1(c, "400", "Institution ID is required", nil, 400)
 	}
 
@@ -100,7 +113,7 @@ func RegisterUser(c fiber.Ctx) error {
 	}
 
 	// NEW: resolve the default "User" role for this institution — never trust client-supplied role_id
-	defaultRoleID, err := script.GetDefaultUserRoleID(req.InstitutionID)
+	defaultRoleID, err := script.GetDefaultUserRoleID(institutionID)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to resolve default role", err, 500)
 	}
@@ -162,7 +175,7 @@ func RegisterUser(c fiber.Ctx) error {
 		LastName:        encLastName,
 		Email:           encEmail,
 		PhoneNo:         encPhoneNo,
-		InstitutionID:   req.InstitutionID,
+		InstitutionID:   institutionID,
 		JobPosition:     jobPosition,
 		RoleID:          defaultRoleID, // always "User" on self-registration
 		Status:          status,

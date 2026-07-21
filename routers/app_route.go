@@ -53,7 +53,6 @@ func AppRoutes(app *fiber.App) {
 	public := apiV1.Group("/public")
 
 	public.Post("/register/super-admin", superadminController.CreateSuperAdmin)
-	public.Post("/register-user", userController.RegisterUser)
 	public.Post("/login/super-admin", superadminController.LoginSuperAdmin)
 
 	// Public institution list — used by the registration page before the user
@@ -94,6 +93,7 @@ func AppRoutes(app *fiber.App) {
 	protected.Get("/get-sub-categories/:category_id", instiadminController.GetAllSubCategories)
 
 	//User
+	protected.Post("/register-user", userController.RegisterUser)
 	protected.Post("/logout", userController.Logout)
 	protected.Get("/get-user/details/:id", userController.GetUserByID)
 	protected.Get("/get-users/:institution_id", userController.GetUsersByInstitutionID)
