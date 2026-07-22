@@ -100,20 +100,22 @@ func IsSubCategoryBelongsToCategory(categoryID uint,subCategoryID uint,) (bool, 
 }
 
 func IsValidEndorser(institutionID uint, userID uint) (bool, error) {
+
 	var count int64
 
-	err := config.DBConnList[0].Raw(`
-		SELECT COUNT(*)
-		FROM users u
-		INNER JOIN roles r
-			ON u.role = r.role_name
-			AND u.institution_id = r.institution_id
-		WHERE
+	err := config.DBConnList[0].
+		Table("users u").
+		Joins(`
+			INNER JOIN roles r
+				ON u.role_id = r.role_id
+		`).
+		Where(`
 			u.id = ?
 			AND u.institution_id = ?
 			AND r.can_endorse = TRUE
 			AND r.deleted_at IS NULL
-	`, userID, institutionID).Scan(&count).Error
+		`, userID, institutionID).
+		Count(&count).Error
 
 	if err != nil {
 		return false, err

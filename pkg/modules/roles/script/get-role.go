@@ -52,6 +52,24 @@ func GetRoleByID(roleID uint) (Rolemodel.Roles, error) {
 	return role, nil
 }
 
+func GetRoleByUserID(userID uint) (*Rolemodel.Roles, error) {
+
+	var role Rolemodel.Roles
+
+	err := config.DBConnList[0].
+		Table("roles r").
+		Select("r.*").
+		Joins("JOIN users u ON u.role_id = r.role_id").
+		Where("u.id = ?", userID).
+		First(&role).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &role, nil
+}
+
 func RoleNameExistsForInstitution(roleName string, institutionID uint, excludeRoleID uint) (bool, error) {
 	var exists bool
 

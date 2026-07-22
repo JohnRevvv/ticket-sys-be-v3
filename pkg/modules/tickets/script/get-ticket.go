@@ -6,10 +6,10 @@ import (
 )
 
 func GetTicketByTicketID(ticketID string) (*ticketModel.Ticket, error) {
+
 	var ticket ticketModel.Ticket
 
 	err := config.DBConnList[0].
-		Preload("TicketAttachment").
 		Where("ticket_id = ?", ticketID).
 		First(&ticket).Error
 

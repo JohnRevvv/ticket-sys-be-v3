@@ -120,6 +120,7 @@ func AppRoutes(app *fiber.App) {
 	ticket.Post("/create", ticketController.CreateNewTicket)
 	ticket.Get("/all", ticketController.GetAllTickets)
 	ticket.Get("/get/:ticket_id", ticketController.GetTicketByTicketID)
+	ticket.Post("/:ticket_id/process", ticketController.ProcessTicket)
 
 	//Project
 	project := apiV1.Group("/project", jwtMiddleware.JWTProtected(), middleware.AutoLogout())

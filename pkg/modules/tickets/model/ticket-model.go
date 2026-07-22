@@ -18,16 +18,12 @@ type Ticket struct {
 	DueDate         *time.Time `json:"due_date"`
 	InstitutionPool uint       `json:"institution_pool"`
 	SubmitterID     uint       `json:"submitter_id"`
-	// Submitter       UserModel.UserDetails `gorm:"foreignKey:SubmitterID;references:ID"`
-	ResolverID uint `json:"resolver_id"`
-	EndorserID uint `json:"endorser_id"`
-	// Endorser        UserModel.UserDetails `gorm:"foreignKey:EndorserID;references:ID"`
-	ApproverID uint `json:"approver_id"`
-
-	TicketAttachment []TicketAttachment `gorm:"foreignKey:TicketID;references:TicketID"`
-	Status           string             `json:"status" gorm:"default:'for endorsement'"`
-	CreatedAt        time.Time          `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt        time.Time          `json:"updated_at" gorm:"autoUpdateTime"`
+	ResolverID      uint       `json:"resolver_id"`
+	EndorserID      uint       `json:"endorser_id"`
+	ApproverID      uint       `json:"approver_id"`
+	Status          string     `json:"status" gorm:"default:'for endorsement'"`
+	CreatedAt       time.Time  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt       time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 
 	CancelledBy        string     `json:"cancelled_by"`
 	CancelledAt        *time.Time `json:"cancelled_at"`
@@ -37,12 +33,14 @@ type Ticket struct {
 	ResolvedAt     *time.Time `json:"resolved_at"`
 	ResolutionTime string     `json:"resolution_time" gorm:"column:resolution_time;default:''"`
 	OnHold         bool       `json:"onhold" gorm:"column:on_hold;default:false"`
+	OnHoldReason   string     `json:"onhold_reason" gorm:"column:on_hold_reason;default:''"`
 	HoldAt         *time.Time `json:"hold_at"`
 	ClosedBy       string     `json:"closed_by"`
 	ClosedAt       *time.Time `json:"closed_at"`
+	EndorsedAt     *time.Time `json:"endorsed_at"`
+	ApprovedAt     *time.Time `json:"approved_at"`
 
-	EndorsedAt *time.Time `json:"endorsed_at"`
-	ApprovedAt *time.Time `json:"approved_at"`
+	TicketAttachment []TicketAttachment `gorm:"foreignKey:TicketID;references:TicketID"`
 
 	CloseToken     string `json:"-" gorm:"column:close_token"`
 	CloseTokenUsed bool   `json:"-" gorm:"column:close_token_used"`

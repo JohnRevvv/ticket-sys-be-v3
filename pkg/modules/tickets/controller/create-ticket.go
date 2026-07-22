@@ -8,7 +8,8 @@ import (
 	InstiScript "ideyanale-be/pkg/modules/institutions/script"
 	ticketModel "ideyanale-be/pkg/modules/tickets/model"
 	ticketScript "ideyanale-be/pkg/modules/tickets/script"
-	"ideyanale-be/pkg/services/s3_service"
+	services "ideyanale-be/pkg/services/s3_service"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -17,36 +18,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type CreateTicketRequest struct {
-	TicketTypeID    uint       `json:"ticket_type_id"`
-	CategoryID      uint       `json:"category_id"`
-	SubCategoryID   uint       `json:"subcategory_id"`
-	Subject         string     `json:"subject"`
-	Description     string     `json:"description"`
-	DueDate         *time.Time `json:"due_date"`
-	InstitutionPool uint       `json:"institution_pool"`
-	EndorserID      uint       `json:"endorser_id"`
-}
-
 func CreateNewTicket(c fiber.Ctx) error {
 	inst := c.Locals("institution_id")
 	if inst == nil {
 		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
 	}
 
-	institutionID, ok := inst.(int)
+	institutionID, ok := inst.(uint)
 	if !ok {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
+
+	
 
 	submitter := c.Locals("id")
 	if submitter == nil {
 		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized user", nil, 401)
 	}
+		log.Printf("id value=%v type=%T\n", submitter, submitter)
 
 	submitterID, ok := submitter.(int)
 	if !ok {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid user id", nil, 500)
+	}
+	
+
+
+	type CreateTicketRequest struct {
+		TicketTypeID    uint       `json:"ticket_type_id"`
+		CategoryID      uint       `json:"category_id"`
+		SubCategoryID   uint       `json:"subcategory_id"`
+		Subject         string     `json:"subject"`
+		Description     string     `json:"description"`
+		DueDate         *time.Time `json:"due_date"`
+		InstitutionPool uint       `json:"institution_pool"`
+		EndorserID      uint       `json:"endorser_id"`
 	}
 
 	var req CreateTicketRequest
@@ -230,7 +236,7 @@ func CreateNewTicket(c fiber.Ctx) error {
 
 			fileName, fileKey, err := s3Service.Upload(fileHeader, ticket.TicketID)
 			if err != nil {
-				return global.JSONResponseWithErrorV1(c, "500", "Failed to upload file", err, 500,)
+				return global.JSONResponseWithErrorV1(c, "500", "Failed to upload file", err, 500)
 			}
 
 			attachment := ticketModel.TicketAttachment{
@@ -263,26 +269,14 @@ func CreateNewTicket(c fiber.Ctx) error {
 func GetAllTickets(c fiber.Ctx) error {
 	tickets, err := ticketScript.GetAllTickets()
 	if err != nil {
-		return global.JSONResponseWithErrorV1(
-			c,
-			"500",
-			"Failed to fetch tickets",
-			err,
-			500,
-		)
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch tickets", err, 500)
 	}
 
 	for i := range tickets {
 		if tickets[i].Subject != "" {
 			subject, err := encrypDecryptV1.DecryptV1(tickets[i].Subject, config.SecretKey)
 			if err != nil {
-				return global.JSONResponseWithErrorV1(
-					c,
-					"500",
-					"Failed to decrypt subject",
-					err,
-					500,
-				)
+				return global.JSONResponseWithErrorV1(c, "500", "Failed to decrypt subject", err, 500)
 			}
 			tickets[i].Subject = subject
 		}
@@ -290,25 +284,13 @@ func GetAllTickets(c fiber.Ctx) error {
 		if tickets[i].Description != "" {
 			description, err := encrypDecryptV1.DecryptV1(tickets[i].Description, config.SecretKey)
 			if err != nil {
-				return global.JSONResponseWithErrorV1(
-					c,
-					"500",
-					"Failed to decrypt description",
-					err,
-					500,
-				)
+				return global.JSONResponseWithErrorV1(c, "500", "Failed to decrypt description", err, 500)
 			}
 			tickets[i].Description = description
 		}
 	}
 
-	return global.JSONResponseWithDataV1(
-		c,
-		"200",
-		"Tickets fetched successfully",
-		tickets,
-		200,
-	)
+	return global.JSONResponseWithDataV1(c, "200", "Tickets fetched successfully", tickets, 200)
 }
 
 func GetTicketByTicketID(c fiber.Ctx) error {
