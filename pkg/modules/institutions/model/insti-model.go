@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
+	Positionmodel "ideyanale-be/pkg/modules/positions/models"
 	Rolemodel "ideyanale-be/pkg/modules/roles/model"
 )
 
@@ -16,13 +16,13 @@ type (
 		InstitutionColor string `gorm:"column:institution_color" json:"institution_color"`
 		Status           string `gorm:"default:'active';not null" json:"status"`
 
-		JobPosition     []IAdmodel.JobPosition `gorm:"foreignKey:InstitutionID"`
-		Role            []Rolemodel.Roles       `gorm:"foreignKey:InstitutionID"`
-		InstitutionLogo InstitutionLogo        `gorm:"foreignKey:InstitutionID"`
+		JobPosition     []Positionmodel.JobPosition `gorm:"-" json:"job_positions"`
+		Role            []Rolemodel.Roles           `gorm:"-" json:"roles"`
+		InstitutionLogo InstitutionLogo             `gorm:"-" json:"institution_logo"`
 
 		CreatedAt time.Time `json:"created_at"`
 	}
-	
+
 	InstitutionLogo struct {
 		ID            uint   `gorm:"primaryKey" json:"id"`
 		InstitutionID uint   `json:"institution_id"`

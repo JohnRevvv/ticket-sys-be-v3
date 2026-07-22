@@ -10,6 +10,7 @@ import (
 	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
 	InstiScript "ideyanale-be/pkg/modules/institutions/script"
 	RoleScript "ideyanale-be/pkg/modules/roles/script"
+	PositionScript "ideyanale-be/pkg/modules/positions/scripts"
 	services "ideyanale-be/pkg/services/s3_service"
 	"regexp"
 	"strconv"
@@ -93,7 +94,7 @@ func AddInstitution(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default sub-categories", err, 500)
 	}
 
-	if err := InsAdScript.AddDefaultPositions(uint(institutionID)); err != nil {
+	if err := PositionScript.AddDefaultPositions(uint(institutionID)); err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to create default positions", err, 500)
 	}
 

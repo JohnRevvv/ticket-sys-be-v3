@@ -3,7 +3,7 @@ package script
 import (
 	"ideyanale-be/pkg/config"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
-	"ideyanale-be/pkg/modules/insti-admin/model"
+	"ideyanale-be/pkg/modules/positions/models"
 
 	"gorm.io/gorm"
 )
@@ -44,7 +44,7 @@ func AddDefaultPositions(institutionID uint) error {
 	})
 }
 
-func AddPosition(position string, institutionID int) error {
+func AddPosition(position string, institutionID uint) error {
 	return config.DBConnList[0].Exec(`
 		INSERT INTO job_positions (
 			position_name,
@@ -57,7 +57,7 @@ func AddPosition(position string, institutionID int) error {
 	).Error
 }
 
-func GetPositionsByInstitutionID(institutionID int) ([]model.JobPosition, error) {
+func GetPositionsByInstitutionID(institutionID uint) ([]model.JobPosition, error) {
 	var positions []model.JobPosition
 
 	err := config.DBConnList[0].Raw(`
@@ -72,7 +72,7 @@ func GetPositionsByInstitutionID(institutionID int) ([]model.JobPosition, error)
 	return positions, err
 }
 
-func UpdatePosition(positionID int, institutionID int, encPositionName string) (int64, error) {
+func UpdatePosition(positionID int, institutionID uint, encPositionName string) (int64, error) {
 	result := config.DBConnList[0].Exec(`
 		UPDATE job_positions
 		SET position_name = ?

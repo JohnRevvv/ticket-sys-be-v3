@@ -18,7 +18,7 @@ func CreateUser(user *model.UserDetails) error {
 			phone_no,
 			institution_id,
 			role_id,
-			job_position,
+			position_id,
 			status,
 			created_at,
 			updated_at
@@ -33,7 +33,7 @@ func CreateUser(user *model.UserDetails) error {
 		user.PhoneNo,
 		user.InstitutionID,
 		user.RoleID,
-		user.JobPosition,
+		user.PositionID,
 		user.Status,
 		time.Now(),
 		time.Now(),

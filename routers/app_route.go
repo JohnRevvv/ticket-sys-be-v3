@@ -9,6 +9,7 @@ import (
 	loggerV1 "ideyanale-be/pkg/middleware/logger/v1"
 	instiadminController "ideyanale-be/pkg/modules/insti-admin/controller"
 	institutionController "ideyanale-be/pkg/modules/institutions/controller"
+	positionController "ideyanale-be/pkg/modules/positions/controllers"
 	projectController "ideyanale-be/pkg/modules/projects/controller"
 	roleController "ideyanale-be/pkg/modules/roles/controller"
 	superadminController "ideyanale-be/pkg/modules/super-admin/controller"
@@ -71,11 +72,12 @@ func AppRoutes(app *fiber.App) {
 	protected.Patch("/user/:id/status", superadminController.ChangeUserStatus)
 	protected.Get("/users/:institution_id", userController.GetUsersByInstitutionID)
 	protected.Post("/logout/super-admin", superadminController.LogoutSuperAdmin)
+	protected.Get("/job-positions/:institution_id", positionController.GetPositionsByInstitutionID)
 
 	//Insti Admin
 	protected.Get("/get-user", userController.GetUsersByInstitutionID)
-	protected.Post("/add/job-position", instiadminController.AddPosition)
-	protected.Get("/job-positions-by-institution", instiadminController.GetPositionsByInstitutionID)
+	protected.Post("/add/job-position", positionController.AddPosition)
+	protected.Get("/job-positions-by-institution", positionController.GetPositions)
 	protected.Post("/add-ticket-types", instiadminController.AddTicketType)
 	protected.Post("/add-category", instiadminController.AddCategory)
 	protected.Post("/add-sub-category", instiadminController.AddSubCategory)

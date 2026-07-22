@@ -11,6 +11,7 @@ func GetUsersByInstitutionID(ID string) ([]model.UserDetails, error) {
 
 	err := config.DBConnList[0].
 		Preload("Role").
+		Preload("JobPosition").
 		Where("institution_id = ?", ID).
 		Order("id DESC").
 		Find(&users).Error
@@ -23,6 +24,7 @@ func GetAllUsers() ([]model.UserDetails, error) {
 
 	err := config.DBConnList[0].
 		Preload("Role").
+		Preload("JobPosition").
 		Order("id DESC").
 		Find(&users).Error
 
@@ -50,6 +52,7 @@ func GetUserByID(userID int) (model.UserDetails, error) {
 
 	err := config.DBConnList[0].
 		Preload("Role").
+		Preload("JobPosition").
 		Where("id = ? AND deleted_at IS NULL", userID).
 		First(&user).Error
 

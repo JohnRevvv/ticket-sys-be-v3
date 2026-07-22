@@ -1,18 +1,16 @@
 package controller
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
 
-	"ideyanale-be/pkg/config"
 	global "ideyanale-be/pkg/global/json_response"
-	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 	jwt "ideyanale-be/pkg/middleware/jwt"
-	InsAdScript "ideyanale-be/pkg/modules/insti-admin/script"
+	PositionScript "ideyanale-be/pkg/modules/positions/scripts"
 )
-
-
 
 func AddPosition(c fiber.Ctx) error {
 
@@ -35,36 +33,29 @@ func AddPosition(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "401", "Unauthorized institution", nil, 401)
 	}
 
-	institutionID, ok := inst.(int)
+		fmt.Printf("institution_id value=%v type=%T\n", inst, inst)
+
+
+	institutionID, ok := inst.(uint)
 	if !ok {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
+	trimmedNewName := strings.TrimSpace(req.PositionName)
 
 	// Fetch existing positions for this institution
-	positions, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
+	positions, err := PositionScript.GetPositionsByInstitutionID(uint(institutionID))
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing positions failed", err, 500)
 	}
 
-	// Decrypt and compare in the controller
-	trimmedNewName := strings.TrimSpace(req.PositionName)
+	// Compare directly
 	for _, pos := range positions {
-		decName, err := encrypDecryptV1.DecryptV1(pos.JobName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt position name failed", err, 500)
-		}
-
-		if strings.EqualFold(strings.TrimSpace(decName), trimmedNewName) {
+		if strings.EqualFold(strings.TrimSpace(pos.PositionName), trimmedNewName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Position name already exists", nil, 409)
 		}
 	}
 
-	encPositionName, err := encrypDecryptV1.EncryptV1(req.PositionName, config.SecretKey)
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Encrypt position name failed", err, 500)
-	}
-
-	err = InsAdScript.AddPosition(encPositionName, institutionID)
+	err = PositionScript.AddPosition(trimmedNewName, uint(institutionID))
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Add position failed", err, 500)
 	}
@@ -72,7 +63,7 @@ func AddPosition(c fiber.Ctx) error {
 	return global.JSONResponseV1(c, "200", "Position added successfully", 200)
 }
 
-func GetPositionsByInstitutionID(c fiber.Ctx) error {
+func GetPositions(c fiber.Ctx) error {
 
 	inst := c.Locals("institution_id")
 	if inst == nil {
@@ -84,7 +75,7 @@ func GetPositionsByInstitutionID(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
 
-	rows, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
+	rows, err := PositionScript.GetPositionsByInstitutionID(uint(institutionID))
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch positions", err, 500)
 	}
@@ -96,14 +87,37 @@ func GetPositionsByInstitutionID(c fiber.Ctx) error {
 
 	var resp []PositionResp
 	for _, row := range rows {
-		decName, err := encrypDecryptV1.DecryptV1(row.JobName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt position name failed", err, 500)
-		}
-
 		resp = append(resp, PositionResp{
 			PositionID:   row.PositionID,
-			PositionName: decName,
+			PositionName: row.PositionName,
+		})
+	}
+
+	return global.JSONResponseWithDataV1(c, "200", "Positions fetched successfully", resp, 200)
+}
+
+func GetPositionsByInstitutionID(c fiber.Ctx) error {
+
+	institutionID, err := strconv.Atoi(c.Params("institution_id"))
+	if err != nil || institutionID <= 0 {
+		return global.JSONResponseWithErrorV1(c, "400", "Invalid institution id", nil, 400)
+	}
+
+	rows, err := PositionScript.GetPositionsByInstitutionID(uint(institutionID))
+	if err != nil {
+		return global.JSONResponseWithErrorV1(c, "500", "Failed to fetch positions", err, 500)
+	}
+
+	type PositionResp struct {
+		PositionID   uint   `json:"position_id"`
+		PositionName string `json:"position_name"`
+	}
+
+	var resp []PositionResp
+	for _, row := range rows {
+		resp = append(resp, PositionResp{
+			PositionID:   row.PositionID,
+			PositionName: row.PositionName,
 		})
 	}
 
@@ -137,35 +151,28 @@ func EditPosition(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Invalid institution id type", nil, 500)
 	}
 
-	// Fetch existing positions for this institution
-	positions, err := InsAdScript.GetPositionsByInstitutionID(institutionID)
+	positions, err := PositionScript.GetPositionsByInstitutionID(uint(institutionID))
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Fetch existing positions failed", err, 500)
 	}
 
-	// Decrypt and compare in the controller, skipping the position being edited
 	trimmedNewName := strings.TrimSpace(req.PositionName)
+
 	for _, pos := range positions {
 		if pos.PositionID == uint(req.PositionID) {
 			continue
 		}
 
-		decName, err := encrypDecryptV1.DecryptV1(pos.JobName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt position name failed", err, 500)
-		}
-
-		if strings.EqualFold(strings.TrimSpace(decName), trimmedNewName) {
+		if strings.EqualFold(strings.TrimSpace(pos.PositionName), trimmedNewName) {
 			return global.JSONResponseWithErrorV1(c, "409", "Position name already exists", nil, 409)
 		}
 	}
 
-	encPositionName, err := encrypDecryptV1.EncryptV1(req.PositionName, config.SecretKey)
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Encrypt position name failed", err, 500)
-	}
-
-	rowsAffected, err := InsAdScript.UpdatePosition(req.PositionID, institutionID, encPositionName)
+	rowsAffected, err := PositionScript.UpdatePosition(
+		req.PositionID,
+		uint(institutionID),
+		trimmedNewName,
+	)
 	if err != nil {
 		return global.JSONResponseWithErrorV1(c, "500", "Update position failed", err, 500)
 	}

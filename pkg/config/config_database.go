@@ -9,16 +9,18 @@ import (
 	"strconv"
 	"strings"
 
-	utils_v1 "github.com/FDSAP-Git-Org/hephaestus/utils/v1"
 	encrypDecryptV1 "ideyanale-be/pkg/middleware/encryption/v1"
 
+	utils_v1 "github.com/FDSAP-Git-Org/hephaestus/utils/v1"
+
 	IAdmodel "ideyanale-be/pkg/modules/insti-admin/model"
-	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
-	Umodel "ideyanale-be/pkg/modules/users/model"
-	Tmodel "ideyanale-be/pkg/modules/tickets/model"
 	Instimodel "ideyanale-be/pkg/modules/institutions/model"
+	Positionmodel "ideyanale-be/pkg/modules/positions/models"
 	Projmodel "ideyanale-be/pkg/modules/projects/model"
 	Rolemodel "ideyanale-be/pkg/modules/roles/model"
+	SAdmodel "ideyanale-be/pkg/modules/super-admin/model"
+	Tmodel "ideyanale-be/pkg/modules/tickets/model"
+	Umodel "ideyanale-be/pkg/modules/users/model"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -208,6 +210,9 @@ func PostgreSQLConnect() bool {
 
 			dbConn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Error),
+
+				// Disable DB-level foreign key constraints during AutoMigrate
+				DisableForeignKeyConstraintWhenMigrating: true,
 			})
 			if err != nil {
 				fmt.Printf("❌ FAILED TO CONNECT TO DATABASE '%s' on %s: %v\n", dbName, config.Host, err)
@@ -237,13 +242,15 @@ func PostgreSQLConnect() bool {
 				&Umodel.LoginOTP{},
 
 				//insti admin model
-				&IAdmodel.JobPosition{},
 				&IAdmodel.TicketType{},
 				&IAdmodel.Category{},
 				&IAdmodel.SubCategory{},
 
 				//Role Model
 				&Rolemodel.Roles{},
+
+				//Position Model
+				&Positionmodel.JobPosition{},
 
 				//Ticket Model
 				&Tmodel.Ticket{},

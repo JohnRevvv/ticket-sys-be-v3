@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -36,22 +35,27 @@ func GetUsersByInstitutionID(c fiber.Ctx) error {
 		CanAudit         bool   `json:"can_audit"`
 	}
 
+	type JobPositionResp struct {
+		PositionID   uint   `json:"position_id"`
+		PositionName string `json:"position_name"`
+	}
+
 	type UserDetailsResp struct {
-		ID              int       `json:"id,omitempty"`
-		Username        string    `json:"username,omitempty"`
-		StaffID         string    `json:"staff_id,omitempty"`
-		FirstName       string    `json:"first_name,omitempty"`
-		LastName        string    `json:"last_name,omitempty"`
-		Email           string    `json:"email,omitempty"`
-		PhoneNo         string    `json:"phone_no,omitempty"`
-		InstitutionID   uint      `json:"institution_id,omitempty"`
-		InstitutionName string    `json:"institution_name,omitempty"`
-		JobPosition     string    `json:"job_position,omitempty"`
-		Role            RoleResp  `json:"role"`
-		Status          string    `json:"status"`
-		LastLogin       string    `json:"last_login,omitempty"`
-		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
-		CreatedAt       time.Time `json:"created_at"`
+		ID              int             `json:"id,omitempty"`
+		Username        string          `json:"username,omitempty"`
+		StaffID         string          `json:"staff_id,omitempty"`
+		FirstName       string          `json:"first_name,omitempty"`
+		LastName        string          `json:"last_name,omitempty"`
+		Email           string          `json:"email,omitempty"`
+		PhoneNo         string          `json:"phone_no,omitempty"`
+		InstitutionID   uint            `json:"institution_id,omitempty"`
+		InstitutionName string          `json:"institution_name,omitempty"`
+		JobPosition     JobPositionResp `json:"job_positions"`
+		Role            RoleResp        `json:"role"`
+		Status          string          `json:"status"`
+		LastLogin       string          `json:"last_login,omitempty"`
+		IsLoggedIn      bool            `json:"is_logged_in,omitempty"`
+		CreatedAt       time.Time       `json:"created_at"`
 	}
 
 	response := make([]UserDetailsResp, 0, len(users))
@@ -88,25 +92,24 @@ func GetUsersByInstitutionID(c fiber.Ctx) error {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt phone number failed", err, 500)
 		}
 
-		decryptedInstitutionName, err := encrypDecryptV1.DecryptV1(user.InstitutionName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
-		}
-
-				fmt.Println(user.RoleID)
-fmt.Println(user.Role.RoleID)
+		// 				fmt.Println(user.RoleID)
+		// fmt.Println(user.Role.RoleID)
 
 		response = append(response, UserDetailsResp{
-			ID:              user.ID,
-			Username:        decryptedUsername,
-			StaffID:         decryptedStaffID,
-			FirstName:       decryptedFirstName,
-			LastName:        decryptedLastName,
-			Email:           decryptedEmail,
-			PhoneNo:         decryptedPhoneNo,
-			InstitutionID:   user.InstitutionID,
-			InstitutionName: decryptedInstitutionName,
-			JobPosition:     user.JobPosition,
+			ID:            user.ID,
+			Username:      decryptedUsername,
+			StaffID:       decryptedStaffID,
+			FirstName:     decryptedFirstName,
+			LastName:      decryptedLastName,
+			Email:         decryptedEmail,
+			PhoneNo:       decryptedPhoneNo,
+			InstitutionID: user.InstitutionID,
+			
+			JobPosition: JobPositionResp{
+				PositionID:   user.JobPosition.PositionID,
+				PositionName: user.JobPosition.PositionName,
+			},
+
 			Role: RoleResp{
 				RoleID:           user.Role.RoleID,
 				RoleName:         user.Role.RoleName,
@@ -153,7 +156,7 @@ func GetAllUsers(c fiber.Ctx) error {
 		PhoneNo         string    `json:"phone_no,omitempty"`
 		InstitutionID   uint      `json:"institution_id,omitempty"`
 		InstitutionName string    `json:"institution_name,omitempty"`
-		JobPosition     string    `json:"job_position,omitempty"`
+		JobPositionID   uint      `json:"job_position_id,omitempty"`
 		Role            RoleResp  `json:"role"`
 		Status          string    `json:"status"`
 		LastLogin       string    `json:"last_login,omitempty"`
@@ -195,22 +198,16 @@ func GetAllUsers(c fiber.Ctx) error {
 			return global.JSONResponseWithErrorV1(c, "500", "Decrypt phone number failed", err, 500)
 		}
 
-		decryptedInstitutionName, err := encrypDecryptV1.DecryptV1(user.InstitutionName, config.SecretKey)
-		if err != nil {
-			return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
-		}
-
 		response = append(response, UserDetailsResp{
-			ID:              user.ID,
-			Username:        decryptedUsername,
-			StaffID:         decryptedStaffID,
-			FirstName:       decryptedFirstName,
-			LastName:        decryptedLastName,
-			Email:           decryptedEmail,
-			PhoneNo:         decryptedPhoneNo,
-			InstitutionID:   user.InstitutionID,
-			InstitutionName: decryptedInstitutionName,
-			JobPosition:     user.JobPosition,
+			ID:            user.ID,
+			Username:      decryptedUsername,
+			StaffID:       decryptedStaffID,
+			FirstName:     decryptedFirstName,
+			LastName:      decryptedLastName,
+			Email:         decryptedEmail,
+			PhoneNo:       decryptedPhoneNo,
+			InstitutionID: user.InstitutionID,
+			JobPositionID: user.PositionID,
 			Role: RoleResp{
 				RoleID:           user.Role.RoleID,
 				RoleName:         user.Role.RoleName,
@@ -257,21 +254,20 @@ func GetUserByID(c fiber.Ctx) error {
 	}
 
 	type UserDetailsResp struct {
-		ID              int       `json:"id,omitempty"`
-		Username        string    `json:"username,omitempty"`
-		StaffID         string    `json:"staff_id,omitempty"`
-		FirstName       string    `json:"first_name,omitempty"`
-		LastName        string    `json:"last_name,omitempty"`
-		Email           string    `json:"email,omitempty"`
-		PhoneNo         string    `json:"phone_no,omitempty"`
-		InstitutionID   uint      `json:"institution_id,omitempty"`
-		InstitutionName string    `json:"institution_name,omitempty"`
-		JobPosition     string    `json:"job_position,omitempty"`
-		Role            RoleResp  `json:"role"`
-		Status          string    `json:"status"`
-		LastLogin       string    `json:"last_login,omitempty"`
-		IsLoggedIn      bool      `json:"is_logged_in,omitempty"`
-		CreatedAt       time.Time `json:"created_at"`
+		ID            int       `json:"id,omitempty"`
+		Username      string    `json:"username,omitempty"`
+		StaffID       string    `json:"staff_id,omitempty"`
+		FirstName     string    `json:"first_name,omitempty"`
+		LastName      string    `json:"last_name,omitempty"`
+		Email         string    `json:"email,omitempty"`
+		PhoneNo       string    `json:"phone_no,omitempty"`
+		InstitutionID uint      `json:"institution_id,omitempty"`
+		JobPositionID uint      `json:"job_position_id,omitempty"`
+		Role          RoleResp  `json:"role"`
+		Status        string    `json:"status"`
+		LastLogin     string    `json:"last_login,omitempty"`
+		IsLoggedIn    bool      `json:"is_logged_in,omitempty"`
+		CreatedAt     time.Time `json:"created_at"`
 	}
 
 	decryptedUsername, err := encrypDecryptV1.DecryptV1(user.Username, config.SecretKey)
@@ -304,22 +300,16 @@ func GetUserByID(c fiber.Ctx) error {
 		return global.JSONResponseWithErrorV1(c, "500", "Decrypt phone number failed", err, 500)
 	}
 
-	decryptedInstitutionName, err := encrypDecryptV1.DecryptV1(user.InstitutionName, config.SecretKey)
-	if err != nil {
-		return global.JSONResponseWithErrorV1(c, "500", "Decrypt institution name failed", err, 500)
-	}
-
 	resp := UserDetailsResp{
-		ID:              user.ID,
-		Username:        decryptedUsername,
-		StaffID:         decryptedStaffID,
-		FirstName:       decryptedFirstName,
-		LastName:        decryptedLastName,
-		Email:           decryptedEmail,
-		PhoneNo:         decryptedPhoneNo,
-		InstitutionID:   user.InstitutionID,
-		InstitutionName: decryptedInstitutionName,
-		JobPosition:     user.JobPosition,
+		ID:            user.ID,
+		Username:      decryptedUsername,
+		StaffID:       decryptedStaffID,
+		FirstName:     decryptedFirstName,
+		LastName:      decryptedLastName,
+		Email:         decryptedEmail,
+		PhoneNo:       decryptedPhoneNo,
+		InstitutionID: user.InstitutionID,
+		JobPositionID: user.PositionID,
 		Role: RoleResp{
 			RoleID:           user.Role.RoleID,
 			RoleName:         user.Role.RoleName,
